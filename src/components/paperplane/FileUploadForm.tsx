@@ -1,7 +1,9 @@
+
 "use client";
 
 import { useEffect, useRef } from 'react';
-import { useFormState, useFormStatus } from 'react-dom';
+import { useActionState } from 'react'; // Changed from react-dom's useFormState
+import { useFormStatus } from 'react-dom'; // useFormStatus remains from react-dom
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -53,7 +55,7 @@ function SubmitButton() {
 
 export function FileUploadForm() {
   const { toast } = useToast();
-  const [state, formAction] = useFormState<FileUploadFormState | undefined, FormData>(handleFileUpload, undefined);
+  const [state, formAction] = useActionState<FileUploadFormState | undefined, FormData>(handleFileUpload, undefined); // Updated to useActionState
   const formRef = useRef<HTMLFormElement>(null);
 
   const { register, handleSubmit, formState: { errors }, reset: resetReactHookForm } = useForm<FormDataSchema>({
