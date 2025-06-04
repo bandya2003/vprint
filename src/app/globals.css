@@ -2,39 +2,35 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  font-family: Arial, Helvetica, sans-serif;
-}
-
 @layer base {
   :root {
-    --background: 0 0% 94%; /* Light gray #F0F0F0 */
-    --foreground: 0 0% 20%; /* Dark gray for text on light gray */
+    --background: 220 20% 96%; /* Lighter, slightly cool gray */
+    --foreground: 220 10% 20%; /* Darker, cool gray for text */
 
     --card: 0 0% 100%; /* White */
-    --card-foreground: 0 0% 13.7%; /* Darker text for cards */
+    --card-foreground: 220 10% 15%; /* Darker text for cards */
 
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 13.7%;
+    --popover-foreground: 220 10% 15%;
 
-    --primary: 272 100% 25.5%; /* Indigo #4B0082 */
-    --primary-foreground: 0 0% 98%; /* Off-white for text on primary */
+    --primary: 210 90% 50%; /* A vibrant, modern blue */
+    --primary-foreground: 0 0% 100%; /* White for text on primary */
 
-    --secondary: 0 0% 90%; /* Slightly darker gray */
-    --secondary-foreground: 0 0% 9.8%; /* Darker text for secondary */
+    --secondary: 220 15% 90%; /* Slightly darker light gray */
+    --secondary-foreground: 220 10% 30%; /* Darker text for secondary */
 
-    --muted: 0 0% 85%; /* More subtle gray */
-    --muted-foreground: 0 0% 45.1%; /* Lighter gray text for muted */
+    --muted: 220 15% 85%; /* More subtle gray */
+    --muted-foreground: 220 10% 45%; /* Lighter gray text for muted */
 
-    --accent: 180 100% 25.1%; /* Teal #008080 */
-    --accent-foreground: 0 0% 98%; /* Off-white for text on accent */
+    --accent: 30 100% 55%; /* A bright, attention-grabbing orange/tangerine */
+    --accent-foreground: 0 0% 100%; /* White for text on accent */
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 0 0% 88%; /* Border color */
-    --input: 0 0% 90%; /* Input background */
-    --ring: 272 100% 25.5%; /* Ring color - Indigo */
+    --border: 220 15% 88%; /* Border color */
+    --input: 220 15% 92%; /* Input background */
+    --ring: 210 90% 50%; /* Ring color - vibrant blue */
 
     --radius: 0.5rem;
 
@@ -55,26 +51,25 @@ body {
   }
 
   .dark {
-    /* Keeping dark mode defaults, can be customized if needed */
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 272 100% 50%; /* Adjusted Indigo for dark mode */
-    --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 180 100% 45%; /* Adjusted Teal for dark mode */
-    --accent-foreground: 0 0% 9%;
+    --background: 220 15% 10%; /* Dark cool gray */
+    --foreground: 220 10% 95%; /* Very light cool gray for text */
+    --card: 220 15% 12%; /* Slightly lighter dark gray for cards */
+    --card-foreground: 220 10% 90%;
+    --popover: 220 15% 12%;
+    --popover-foreground: 220 10% 90%;
+    --primary: 210 90% 60%; /* Vibrant blue, slightly lighter for dark mode */
+    --primary-foreground: 220 10% 10%; /* Dark text on primary */
+    --secondary: 220 15% 20%;
+    --secondary-foreground: 220 10% 90%;
+    --muted: 220 15% 25%;
+    --muted-foreground: 220 10% 60%;
+    --accent: 30 100% 60%; /* Bright orange, slightly lighter for dark mode */
+    --accent-foreground: 220 10% 10%; /* Dark text on accent */
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 272 100% 50%; /* Adjusted Ring for dark mode */
+    --border: 220 15% 25%;
+    --input: 220 15% 20%;
+    --ring: 210 90% 60%;
     
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
