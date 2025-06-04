@@ -6,7 +6,7 @@ export function PaperPlaneLogo(props: SVGProps<SVGSVGElement> & { size?: number 
   return (
     <div className="flex items-center gap-2">
       <Send size={size} className="text-primary" />
-      <span className="text-2xl font-headline font-semibold text-primary">PaperPlane</span>
+      <span className="text-3xl font-headline font-semibold text-primary">PaperPlane</span>
     </div>
   );
 }
