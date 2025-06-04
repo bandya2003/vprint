@@ -7,6 +7,7 @@ export interface UploadedFile {
   uploadDate: string; // ISO date string
   downloadUrl: string;
   storagePath: string; // Path in Firebase Storage or similar
+  downloadTimestamps?: string[]; // Array of ISO date strings for when the file was downloaded
 }
 
 export interface FileUploadFormState {

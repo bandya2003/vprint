@@ -1,8 +1,13 @@
+"use client";
+
 import type { UploadedFile } from '@/types';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { FileText, FileImage, Download, File as FileIcon } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card'; // Removed CardHeader, CardDescription, CardTitle
+import { FileText, FileImage, Download, File as FileIcon, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
+import { useTransition } from 'react';
+import { recordFileDownload } from '@/lib/actions';
+import { useToast } from '@/hooks/use-toast';
 
 interface FileListItemProps {
   file: UploadedFile;
@@ -13,16 +18,39 @@ function getFileIcon(fileType: string) {
     return <FileImage className="h-8 w-8 text-accent" />;
   }
   if (fileType === 'application/pdf') {
-    return <FileText className="h-8 w-8 text-red-500" />;
+    return <FileText className="h-8 w-8 text-primary" />;
   }
   if (fileType.includes('word')) {
-    return <FileText className="h-8 w-8 text-blue-500" />;
+    return <FileText className="h-8 w-8 text-primary" />;
   }
   return <FileIcon className="h-8 w-8 text-muted-foreground" />;
 }
 
 export function FileListItem({ file }: FileListItemProps) {
   const formattedDate = format(new Date(file.uploadDate), 'MMM dd, yyyy HH:mm');
+  const [isDownloading, startDownloadTransition] = useTransition();
+  const { toast } = useToast();
+
+  const handleDownload = () => {
+    startDownloadTransition(async () => {
+      const result = await recordFileDownload(file.id);
+      if (result.success) {
+        // The downloadUrl is a placeholder image URL from placehold.co
+        // In a real app, this would be a direct link to the file or a signed URL.
+        window.open(file.downloadUrl, '_blank');
+        toast({
+          title: "Download Started",
+          description: `"${file.fileName}" should begin downloading.`,
+        });
+      } else {
+        toast({
+          title: "Download Error",
+          description: result.message || "Could not record download.",
+          variant: "destructive",
+        });
+      }
+    });
+  };
 
   return (
     <Card className="w-full overflow-hidden shadow-md transition-all hover:shadow-lg">
@@ -42,17 +70,14 @@ export function FileListItem({ file }: FileListItemProps) {
           </p>
         </div>
         <Button 
-          asChild 
           variant="outline" 
           size="sm"
           className="bg-primary text-primary-foreground hover:bg-primary/90"
+          onClick={handleDownload}
+          disabled={isDownloading}
         >
-          {/* In a real app, file.downloadUrl would point to the actual file in Firebase Storage */}
-          {/* For this mock, we'll make it "download" a placeholder image */}
-          <a href={`https://placehold.co/600x400.png?text=${encodeURIComponent(file.fileName)}`} download={file.fileName} target="_blank" rel="noopener noreferrer">
-            <Download className="mr-2 h-4 w-4" />
-            Download
-          </a>
+          {isDownloading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+          Download
         </Button>
       </CardContent>
     </Card>

@@ -3,6 +3,7 @@
 import { z } from 'zod';
 import type { UploadedFile, FileUploadFormState } from '@/types';
 import { revalidatePath } from 'next/cache';
+import { isToday, isSameWeek, parseISO } from 'date-fns';
 
 // --- Schemas ---
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -32,10 +33,6 @@ const FileUploadSchema = z.object({
 });
 
 // --- Mock Database and Storage ---
-// In a real app, this would interact with Firebase Firestore and Storage.
-// Auto-cleanup (deleting files after 2-7 days) would be a separate scheduled Firebase Cloud Function.
-// This function would query Firestore for records with an 'uploadDate' older than the threshold
-// and then delete the corresponding file from Firebase Storage and the record from Firestore.
 let mockFileDatabase: UploadedFile[] = [];
 
 export async function handleFileUpload(prevState: FileUploadFormState | undefined, formData: FormData): Promise<FileUploadFormState> {
@@ -57,27 +54,21 @@ export async function handleFileUpload(prevState: FileUploadFormState | undefine
   const { guestCode, file } = validatedFields.data;
 
   try {
-    // Simulate file upload to storage (e.g., Firebase Storage)
-    // In a real scenario, you'd get a downloadURL and storagePath from the storage service.
     const fileName = file.name;
     const fileType = file.type;
     
-    // Simulate saving metadata to database (e.g., Firestore)
     const newFile: UploadedFile = {
-      id: Math.random().toString(36).substring(2, 15), // Mock ID
-      guestCode: guestCode.toLowerCase(), // Store guest code in lowercase for case-insensitive search
+      id: Math.random().toString(36).substring(2, 15),
+      guestCode: guestCode.toLowerCase(),
       fileName,
       fileType,
       uploadDate: new Date().toISOString(),
-      // In a real app, this URL would come from Firebase Storage after upload.
-      // For this mock, we'll use a placeholder that indicates it's a mock.
-      downloadUrl: `mock://download/${guestCode}/${fileName}`, 
-      storagePath: `uploads/${guestCode}/${Date.now()}-${fileName}`, // Mock storage path
+      downloadUrl: `https://placehold.co/800x600.png?text=${encodeURIComponent('File: ' + fileName)}`, // Updated placeholder
+      storagePath: `uploads/${guestCode}/${Date.now()}-${fileName}`,
+      downloadTimestamps: [],
     };
 
     mockFileDatabase.push(newFile);
-    
-    // Revalidate the path to update any displayed file lists
     revalidatePath('/');
 
     return {
@@ -100,10 +91,46 @@ export async function fetchFilesByGuestCode(guestCode: string): Promise<Uploaded
   if (!guestCode || guestCode.trim() === "") {
     return [];
   }
-  // Filter mock database. In a real app, this would query Firestore.
-  // Guest codes are stored and searched in lowercase.
   const files = mockFileDatabase.filter(file => file.guestCode === guestCode.toLowerCase());
-  
-  // Sort by upload date, newest first
   return files.sort((a, b) => new Date(b.uploadDate).getTime() - new Date(a.uploadDate).getTime());
+}
+
+export async function recordFileDownload(fileId: string): Promise<{ success: boolean; message?: string }> {
+  const fileIndex = mockFileDatabase.findIndex(f => f.id === fileId);
+  if (fileIndex === -1) {
+    return { success: false, message: "File not found." };
+  }
+  if (!mockFileDatabase[fileIndex].downloadTimestamps) {
+    mockFileDatabase[fileIndex].downloadTimestamps = [];
+  }
+  mockFileDatabase[fileIndex].downloadTimestamps!.push(new Date().toISOString());
+  revalidatePath('/'); // To update stats if they are on the same page
+  return { success: true };
+}
+
+export async function getDownloadStats(): Promise<{ today: number; thisWeek: number }> {
+  let todayCount = 0;
+  let thisWeekCount = 0;
+  const now = new Date();
+
+  mockFileDatabase.forEach(file => {
+    if (file.downloadTimestamps) {
+      file.downloadTimestamps.forEach(timestampStr => {
+        try {
+          const timestamp = parseISO(timestampStr);
+          if (isToday(timestamp)) {
+            todayCount++;
+          }
+          // isSameWeek by default considers Sunday as the start of the week.
+          // For Monday as start: isSameWeek(timestamp, now, { weekStartsOn: 1 })
+          if (isSameWeek(timestamp, now, { weekStartsOn: 1 })) {
+            thisWeekCount++;
+          }
+        } catch (e) {
+          console.error("Error parsing date for stats: ", timestampStr, e);
+        }
+      });
+    }
+  });
+  return { today: todayCount, thisWeek: thisWeekCount };
 }
