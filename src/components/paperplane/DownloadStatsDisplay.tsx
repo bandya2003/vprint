@@ -3,11 +3,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { TrendingUp, CalendarCheck2, CheckSquare } from 'lucide-react';
-
-interface StatsData {
-  today: number;
-  thisWeek: number;
-}
+import type { StatsData } from './DownloadStatsDataFetcher'; // Import the shared interface
 
 export function DownloadStatsDisplay({ stats }: { stats: StatsData }) {
   return (

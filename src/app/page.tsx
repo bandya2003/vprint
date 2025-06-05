@@ -4,7 +4,8 @@
 import { useState, useCallback, Suspense } from 'react'; // Added Suspense
 import { PaperPlaneLogo } from "@/components/paperplane/PaperPlaneLogo";
 import { FileUploadForm } from "@/components/paperplane/FileUploadForm";
-import { DownloadStatsContainer } from "@/components/paperplane/DownloadStatsContainer"; // This is now the async SC
+import { DownloadStatsDataFetcher, type StatsData } from "@/components/paperplane/DownloadStatsDataFetcher";
+import { DownloadStatsDisplay } from "@/components/paperplane/DownloadStatsDisplay";
 import { DownloadStatsSkeleton } from "@/components/paperplane/DownloadStatsSkeleton"; // For Suspense fallback
 import { FileList } from "@/components/paperplane/FileList";
 import { Separator } from "@/components/ui/separator";
@@ -26,7 +27,7 @@ export default function HomePage() {
 
   const handleUploadSuccess = useCallback(() => {
     setIsUploadDialogOpen(false);
-  }, [setIsUploadDialogOpen]); // Dependency array includes setIsUploadDialogOpen
+  }, [setIsUploadDialogOpen]);
 
   return (
     <div className="flex flex-col items-center justify-start min-h-screen p-4 md:p-8 space-y-10">
@@ -80,7 +81,9 @@ export default function HomePage() {
 
         <section id="stats" className="w-full flex justify-center px-2">
           <Suspense fallback={<DownloadStatsSkeleton />}>
-            <DownloadStatsContainer />
+            <DownloadStatsDataFetcher>
+              {(stats: StatsData) => <DownloadStatsDisplay stats={stats} />}
+            </DownloadStatsDataFetcher>
           </Suspense>
         </section>
       </main>
