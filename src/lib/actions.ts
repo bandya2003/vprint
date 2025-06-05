@@ -10,7 +10,7 @@ import { isToday, isSameWeek, parseISO } from 'date-fns';
 const SUPABASE_BUCKET_NAME = 'vprint-files';
 
 // --- Schemas ---
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB (Supabase free tier allows larger, but good to have a limit)
+const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
 const ALLOWED_MIME_TYPES = [
   'application/pdf',
   'application/msword',
@@ -71,12 +71,12 @@ export async function handleFileUpload(prevState: FileUploadFormState | undefine
     if (uploadError) {
       console.error("Supabase Storage upload error:", {
         message: uploadError.message,
-        error: uploadError.error,
-        status: (uploadError as any).status, // For HttpError
+        error: (uploadError as any).error, // Adjust for Supabase error structure
+        status: (uploadError as any).status || (uploadError as any).statusCode, // For HttpError or similar
         stack: uploadError.stack,
       });
       return {
-        message: `Storage upload failed: ${uploadError.message}`,
+        message: `Storage upload failed. Details: ${uploadError.message}`,
         success: false,
         errors: { _form: [`Storage upload failed. Details: ${uploadError.message}`] }
       };
@@ -120,8 +120,8 @@ export async function handleFileUpload(prevState: FileUploadFormState | undefine
     const { data: dbData, error: dbError } = await supabase
       .from('files')
       .insert(fileMetadataToInsert)
-      .select() // Important to get the inserted row back, especially the ID
-      .single(); // We expect a single row to be inserted and returned
+      .select() 
+      .single(); 
 
     if (dbError) {
       console.error("Supabase DB insert error:", {
@@ -144,7 +144,7 @@ export async function handleFileUpload(prevState: FileUploadFormState | undefine
     return {
       message: `File "${file.name}" uploaded successfully for guest code "${guestCode}".`,
       success: true,
-      uploadedFileId: dbData?.id, // Supabase generates the ID
+      uploadedFileId: dbData?.id, 
     };
 
   } catch (error) {
@@ -153,7 +153,6 @@ export async function handleFileUpload(prevState: FileUploadFormState | undefine
     if (error instanceof Error) {
         errorMessage = error.message;
     }
-    // Attempt to clean up storage if a general error occurs, though path might not be defined
     if (storagePath) {
         try {
             await supabase.storage.from(SUPABASE_BUCKET_NAME).remove([storagePath]);
@@ -236,7 +235,7 @@ export async function recordFileDownload(fileId: string): Promise<{ success: boo
       return { success: false, message: "Failed to record download in DB." };
     }
     
-    revalidatePath('/'); // Revalidate if stats are shown on the same page
+    revalidatePath('/'); 
     return { success: true };
   } catch (e) {
     const error = e as Error;
@@ -291,7 +290,7 @@ export async function getDownloadStats(): Promise<{ today: number; thisWeek: num
         message: generalError.message || "N/A",
         stack: generalError.stack || "N/A",
     });
-    return { today: 0, thisWeek: 0 }; // Ensure return in case of processing error
+    return { today: 0, thisWeek: 0 }; 
   }
   
   return { today: todayCount, thisWeek: thisWeekCount };
