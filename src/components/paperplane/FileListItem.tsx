@@ -9,7 +9,6 @@ import { format } from 'date-fns';
 import { useTransition } from 'react';
 import { recordFileDownload } from '@/lib/actions'; // Server action
 import { useToast } from '@/hooks/use-toast';
-import type { Timestamp } from 'firebase/firestore';
 
 interface FileListItemProps {
   file: UploadedFile;
@@ -29,24 +28,22 @@ function getFileIcon(fileType: string) {
 }
 
 export function FileListItem({ file }: FileListItemProps) {
-  // Convert Firestore Timestamp to JS Date for formatting
-  const uploadDateObject = (file.uploadDate as Timestamp).toDate();
+  // Convert JS Timestamp (number) to JS Date for formatting
+  const uploadDateObject = new Date(file.uploadDate);
   const formattedDate = format(uploadDateObject, 'MMM dd, yyyy HH:mm');
   
   const [isDownloading, startDownloadTransition] = useTransition();
   const { toast } = useToast();
 
-  // The download URL in file.downloadUrl now comes directly from Firebase Storage.
-  // However, to record the download and maintain a consistent UX, we still route through our API.
-  // The API route /api/download/[fileId] will handle fetching from the actual Firebase Storage URL.
-  const apiDownloadUrl = `/api/download/${file.id}`;
+  // The download URL now points to our internal API route
+  const apiDownloadUrl = file.downloadUrl; // e.g., /api/download/fileId123
 
   const handleDownload = () => {
     startDownloadTransition(async () => {
       const result = await recordFileDownload(file.id);
       
       if (result.success) {
-        // Open the API route which will serve the file from Firebase Storage
+        // Open the API route which will serve the file from memory
         window.open(apiDownloadUrl, '_blank'); 
         toast({
           title: "Download Started",

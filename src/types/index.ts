@@ -1,15 +1,13 @@
 
-import type { Timestamp } from 'firebase/firestore';
-
 export interface UploadedFile {
-  id: string; // Firestore document ID
+  id: string;
   guestCode: string;
   fileName: string;
   fileType: string; // MIME type
-  uploadDate: Timestamp; // Firestore Timestamp
-  downloadUrl: string; // Firebase Storage download URL
-  storagePath: string; // Path in Firebase Storage
-  downloadTimestamps?: Timestamp[]; // Array of Firestore Timestamps
+  uploadDate: number; // JS Timestamp (Date.now())
+  downloadUrl: string; // Will be /api/download/[id]
+  fileContentBase64?: string; // Base64 encoded file content for in-memory storage
+  downloadTimestamps?: number[]; // Array of JS Timestamps
 }
 
 export interface FileUploadFormState {
@@ -20,5 +18,5 @@ export interface FileUploadFormState {
     file?: string[];
     _form?: string[];
   };
-  uploadedFileId?: string; // Store ID of uploaded file in Firestore
+  uploadedFileId?: string;
 }
