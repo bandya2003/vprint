@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useTransition, FormEvent, ChangeEvent } from 'react';
@@ -23,7 +24,7 @@ export function FileList() {
       setSearched(false);
       return;
     }
-    setSearched(false); // Reset searched state to show loader
+    setSearched(false); 
     startTransition(async () => {
       const fetchedFiles = await fetchFilesByGuestCode(guestCode);
       setFiles(fetchedFiles);

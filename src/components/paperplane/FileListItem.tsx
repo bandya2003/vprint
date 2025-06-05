@@ -5,9 +5,9 @@ import type { UploadedFile } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { FileText, FileImage, Download, File as FileIcon, Loader2 } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { useTransition } from 'react';
-import { recordFileDownload } from '@/lib/actions'; // Server action
+import { recordFileDownload } from '@/lib/actions'; 
 import { useToast } from '@/hooks/use-toast';
 
 interface FileListItemProps {
@@ -28,26 +28,30 @@ function getFileIcon(fileType: string) {
 }
 
 export function FileListItem({ file }: FileListItemProps) {
-  // Convert JS Timestamp (number) to JS Date for formatting
-  const uploadDateObject = new Date(file.uploadDate);
-  const formattedDate = format(uploadDateObject, 'MMM dd, yyyy HH:mm');
+  let formattedDate = "Invalid Date";
+  try {
+    const uploadDateObject = parseISO(file.upload_date); // Supabase stores as ISO string
+    formattedDate = format(uploadDateObject, 'MMM dd, yyyy HH:mm');
+  } catch (e) {
+    console.error("Error parsing date:", file.upload_date, e);
+  }
   
   const [isDownloading, startDownloadTransition] = useTransition();
   const { toast } = useToast();
 
-  // The download URL now points to our internal API route
-  const apiDownloadUrl = file.downloadUrl; // e.g., /api/download/fileId123
+  // The download now points to our internal API route which will then fetch from Supabase
+  const apiDownloadUrl = `/api/download/${file.id}`; 
 
   const handleDownload = () => {
     startDownloadTransition(async () => {
-      const result = await recordFileDownload(file.id);
+      const result = await recordFileDownload(file.id); // Records download in Supabase DB
       
       if (result.success) {
-        // Open the API route which will serve the file from memory
+        // Open our API route which will serve the file from Supabase Storage
         window.open(apiDownloadUrl, '_blank'); 
         toast({
           title: "Download Started",
-          description: `"${file.fileName}" should begin downloading.`,
+          description: `"${file.file_name}" should begin downloading.`,
         });
       } else {
         toast({
@@ -63,14 +67,14 @@ export function FileListItem({ file }: FileListItemProps) {
     <Card className="w-full overflow-hidden shadow-md transition-all hover:shadow-lg">
       <CardContent className="p-4 flex items-center space-x-4">
         <div className="flex-shrink-0">
-          {getFileIcon(file.fileType)}
+          {getFileIcon(file.file_type)}
         </div>
         <div className="flex-grow min-w-0">
-          <p className="text-sm font-medium text-foreground truncate" title={file.fileName}>
-            {file.fileName}
+          <p className="text-sm font-medium text-foreground truncate" title={file.file_name}>
+            {file.file_name}
           </p>
           <p className="text-xs text-muted-foreground">
-            Type: {file.fileType}
+            Type: {file.file_type}
           </p>
           <p className="text-xs text-muted-foreground">
             Uploaded: {formattedDate}

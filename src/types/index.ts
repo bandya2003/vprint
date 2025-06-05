@@ -1,13 +1,13 @@
 
 export interface UploadedFile {
-  id: string;
-  guestCode: string;
-  fileName: string;
-  fileType: string; // MIME type
-  uploadDate: number; // JS Timestamp (Date.now())
-  downloadUrl: string; // Will be /api/download/[id]
-  fileContentBase64?: string; // Base64 encoded file content for in-memory storage
-  downloadTimestamps?: number[]; // Array of JS Timestamps
+  id: string; // Supabase will generate this UUID
+  guest_code: string;
+  file_name: string;
+  file_type: string; // MIME type
+  upload_date: string; // ISO 8601 string (e.g., from new Date().toISOString())
+  download_url: string; // Public URL from Supabase Storage
+  storage_path: string; // Path in Supabase Storage bucket, for deletion
+  download_timestamps?: string[]; // Array of ISO 8601 strings
 }
 
 export interface FileUploadFormState {
