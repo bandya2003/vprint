@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Search, Loader2, FileWarning } from 'lucide-react';
 
-export function FileList() {
+export default function FileList() {
   const [guestCode, setGuestCode] = useState('');
   const [files, setFiles] = useState<UploadedFile[]>([]);
   const [searched, setSearched] = useState(false);
