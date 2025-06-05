@@ -7,9 +7,9 @@ export async function DownloadStats() {
   const stats = await getDownloadStats();
 
   return (
-    <Card className="w-full max-w-md shadow-lg">
+    <Card className="w-full max-w-2xl shadow-lg">
       <CardHeader>
-        <CardTitle className="text-xl font-headline flex items-center">
+        <CardTitle className="text-xl font-headline flex items-center text-accent">
           <TrendingUp className="mr-2 h-5 w-5 text-accent" />
           Print Activity
         </CardTitle>

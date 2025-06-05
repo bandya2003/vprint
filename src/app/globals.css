@@ -4,33 +4,33 @@
 
 @layer base {
   :root {
-    --background: 220 20% 96%; /* Lighter, slightly cool gray */
-    --foreground: 220 10% 20%; /* Darker, cool gray for text */
+    --background: 0 0% 94%; /* Light gray (#F0F0F0) */
+    --foreground: 240 10% 10%; /* Dark cool gray for text */
 
     --card: 0 0% 100%; /* White */
-    --card-foreground: 220 10% 15%; /* Darker text for cards */
+    --card-foreground: 240 10% 10%; /* Darker text for cards */
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 10% 15%;
+    --popover-foreground: 240 10% 10%;
 
-    --primary: 210 90% 50%; /* A vibrant, modern blue */
+    --primary: 275 70% 45%; /* Indigo (#4B0082) - شويه lighter/more saturated for UI */
     --primary-foreground: 0 0% 100%; /* White for text on primary */
 
-    --secondary: 220 15% 90%; /* Slightly darker light gray */
-    --secondary-foreground: 220 10% 30%; /* Darker text for secondary */
+    --secondary: 240 10% 90%; /* Slightly darker light gray */
+    --secondary-foreground: 240 10% 20%; /* Darker text for secondary */
 
-    --muted: 220 15% 85%; /* More subtle gray */
-    --muted-foreground: 220 10% 45%; /* Lighter gray text for muted */
+    --muted: 240 10% 85%; /* More subtle gray */
+    --muted-foreground: 240 10% 40%; /* Lighter gray text for muted */
 
-    --accent: 30 100% 55%; /* A bright, attention-grabbing orange/tangerine */
+    --accent: 180 70% 35%; /* Teal (#008080) - شويه lighter for UI */
     --accent-foreground: 0 0% 100%; /* White for text on accent */
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 220 15% 88%; /* Border color */
-    --input: 220 15% 92%; /* Input background */
-    --ring: 210 90% 50%; /* Ring color - vibrant blue */
+    --border: 240 10% 88%; /* Border color */
+    --input: 240 10% 92%; /* Input background */
+    --ring: 275 70% 55%; /* A slightly lighter Indigo for focus rings */
 
     --radius: 0.5rem;
 
@@ -51,25 +51,33 @@
   }
 
   .dark {
-    --background: 220 15% 10%; /* Dark cool gray */
-    --foreground: 220 10% 95%; /* Very light cool gray for text */
-    --card: 220 15% 12%; /* Slightly lighter dark gray for cards */
-    --card-foreground: 220 10% 90%;
-    --popover: 220 15% 12%;
-    --popover-foreground: 220 10% 90%;
-    --primary: 210 90% 60%; /* Vibrant blue, slightly lighter for dark mode */
-    --primary-foreground: 220 10% 10%; /* Dark text on primary */
-    --secondary: 220 15% 20%;
-    --secondary-foreground: 220 10% 90%;
-    --muted: 220 15% 25%;
-    --muted-foreground: 220 10% 60%;
-    --accent: 30 100% 60%; /* Bright orange, slightly lighter for dark mode */
-    --accent-foreground: 220 10% 10%; /* Dark text on accent */
-    --destructive: 0 62.8% 30.6%;
+    --background: 240 10% 10%; /* Dark cool gray */
+    --foreground: 0 0% 95%; /* Very light gray for text (was 240 5% 95%) */
+    
+    --card: 240 10% 12%; /* Slightly lighter dark gray for cards */
+    --card-foreground: 0 0% 92%; /* (was 240 5% 90%) */
+    
+    --popover: 240 10% 12%;
+    --popover-foreground: 0 0% 92%;
+    
+    --primary: 275 70% 55%; /* Indigo, lighter for dark mode */
+    --primary-foreground: 0 0% 100%; /* White text on primary (was 275 10% 15%) */
+    
+    --secondary: 240 10% 20%; /* (was 240 15% 20%) */
+    --secondary-foreground: 0 0% 92%; /* (was 240 10% 90%) */
+    
+    --muted: 240 10% 25%; /* (was 240 15% 25%) */
+    --muted-foreground: 240 5% 65%; /* (was 240 10% 60%) */
+    
+    --accent: 180 70% 45%; /* Teal, lighter for dark mode */
+    --accent-foreground: 0 0% 100%; /* White text on accent (was 180 10% 15%) */
+    
+    --destructive: 0 70% 50%; /* (was 0 62.8% 30.6%) */
     --destructive-foreground: 0 0% 98%;
-    --border: 220 15% 25%;
-    --input: 220 15% 20%;
-    --ring: 210 90% 60%;
+    
+    --border: 240 10% 20%; /* (was 240 15% 25%) */
+    --input: 240 10% 18%; /* (was 240 15% 20%) */
+    --ring: 275 70% 65%; /* (was 210 90% 60%) */
     
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
@@ -94,5 +102,9 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: 'Inter', sans-serif;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-headline;
   }
 }
