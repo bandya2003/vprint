@@ -4,7 +4,7 @@
 import { useState, useTransition, FormEvent, ChangeEvent } from 'react';
 import type { UploadedFile } from '@/types';
 import { fetchFilesByGuestCode } from '@/lib/actions';
-import { FileListItem } from './FileListItem';
+import FileListItem from './FileListItem'; // Changed import
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -24,7 +24,7 @@ export default function FileList() {
       setSearched(false);
       return;
     }
-    setSearched(false); 
+    setSearched(false);
     startTransition(async () => {
       const fetchedFiles = await fetchFilesByGuestCode(guestCode);
       setFiles(fetchedFiles);

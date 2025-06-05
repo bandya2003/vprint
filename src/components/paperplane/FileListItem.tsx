@@ -7,7 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { FileText, FileImage, Download, File as FileIcon, Loader2 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { useTransition } from 'react';
-import { recordFileDownload } from '@/lib/actions'; 
+import { recordFileDownload } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
 
 interface FileListItemProps {
@@ -27,7 +27,7 @@ function getFileIcon(fileType: string) {
   return <FileIcon className="h-8 w-8 text-muted-foreground" />;
 }
 
-export function FileListItem({ file }: FileListItemProps) {
+export default function FileListItem({ file }: FileListItemProps) {
   let formattedDate = "Invalid Date";
   try {
     const uploadDateObject = parseISO(file.upload_date); // Supabase stores as ISO string
@@ -35,20 +35,20 @@ export function FileListItem({ file }: FileListItemProps) {
   } catch (e) {
     console.error("Error parsing date:", file.upload_date, e);
   }
-  
+
   const [isDownloading, startDownloadTransition] = useTransition();
   const { toast } = useToast();
 
   // The download now points to our internal API route which will then fetch from Supabase
-  const apiDownloadUrl = `/api/download/${file.id}`; 
+  const apiDownloadUrl = `/api/download/${file.id}`;
 
   const handleDownload = () => {
     startDownloadTransition(async () => {
       const result = await recordFileDownload(file.id); // Records download in Supabase DB
-      
+
       if (result.success) {
         // Open our API route which will serve the file from Supabase Storage
-        window.open(apiDownloadUrl, '_blank'); 
+        window.open(apiDownloadUrl, '_blank');
         toast({
           title: "Download Started",
           description: `"${file.file_name}" should begin downloading.`,
@@ -80,8 +80,8 @@ export function FileListItem({ file }: FileListItemProps) {
             Uploaded: {formattedDate}
           </p>
         </div>
-        <Button 
-          variant="outline" 
+        <Button
+          variant="outline"
           size="sm"
           className="bg-primary text-primary-foreground hover:bg-primary/90"
           onClick={handleDownload}
