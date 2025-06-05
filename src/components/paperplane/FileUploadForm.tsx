@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useTransition } from 'react'; // Added useTransition
 import { useActionState } from 'react'; 
 import { useFormStatus } from 'react-dom'; 
 import { useForm } from 'react-hook-form';
@@ -58,6 +58,7 @@ export function FileUploadForm() {
   const { toast } = useToast();
   const [state, formAction] = useActionState<FileUploadFormState | undefined, FormData>(handleFileUpload, undefined);
   const formRef = useRef<HTMLFormElement>(null);
+  const [, startTransition] = useTransition(); // Hook for starting a transition
 
   const { register, handleSubmit, formState: { errors }, reset: resetReactHookForm } = useForm<FormDataSchema>({
     resolver: zodResolver(formSchema),
@@ -90,7 +91,9 @@ export function FileUploadForm() {
     if (data.file && data.file.length > 0) {
       formData.append('file', data.file[0]);
     }
-    formAction(formData);
+    startTransition(() => { // Wrap the action call in startTransition
+      formAction(formData);
+    });
   };
   
   return (
