@@ -25,6 +25,7 @@ async function fetchStatsData(): Promise<StatsData> {
         hint: error.hint,
         code: error.code,
       });
+      // Return zero stats on error to prevent breaking the UI
       return { today: 0, thisWeek: 0 };
     }
 
@@ -37,7 +38,7 @@ async function fetchStatsData(): Promise<StatsData> {
               if (isToday(downloadDate)) {
                 todayCount++;
               }
-              if (isSameWeek(downloadDate, now, { weekStartsOn: 1 })) {
+              if (isSameWeek(downloadDate, now, { weekStartsOn: 1 })) { // Assuming week starts on Monday
                 thisWeekCount++;
               }
             } catch (parseError) {
@@ -54,6 +55,7 @@ async function fetchStatsData(): Promise<StatsData> {
         message: generalError.message || "N/A",
         stack: generalError.stack || "N/A",
     });
+    // Return zero stats on general error
     return { today: 0, thisWeek: 0 };
   }
   return { today: todayCount, thisWeek: thisWeekCount };

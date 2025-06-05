@@ -1,5 +1,4 @@
-
-'use client';
+'use client'; // This component is for UI fallback and uses UI components.
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';

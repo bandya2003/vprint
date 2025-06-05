@@ -1,5 +1,4 @@
-
-'use client';
+'use client'; // This component uses UI elements and receives props, making it a Client Component.
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { TrendingUp, CalendarCheck2, CheckSquare } from 'lucide-react';
