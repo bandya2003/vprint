@@ -5,9 +5,7 @@ import { useState, useCallback, Suspense } from 'react';
 import dynamic from 'next/dynamic';
 import { PaperPlaneLogo } from "@/components/paperplane/PaperPlaneLogo";
 import { FileUploadForm } from "@/components/paperplane/FileUploadForm";
-import { DownloadStatsDataFetcher, type StatsData } from '@/components/paperplane/DownloadStatsDataFetcher';
-import { DownloadStatsDisplay } from '@/components/paperplane/DownloadStatsDisplay';
-import { DownloadStatsSkeleton } from '@/components/paperplane/DownloadStatsSkeleton';
+import StatsSection from './stats-section'; // Import the new StatsSection component
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import {
@@ -38,7 +36,7 @@ export default function HomePage() {
 
   const handleUploadSuccess = useCallback(() => {
     setIsUploadDialogOpen(false);
-  }, [setIsUploadDialogOpen]); // Include setIsUploadDialogOpen in dependencies for completeness, though it's stable
+  }, [setIsUploadDialogOpen]); 
 
   return (
     <div className="flex flex-col items-center justify-start min-h-screen p-4 md:p-8 space-y-10">
@@ -90,13 +88,8 @@ export default function HomePage() {
         
         <Separator className="my-6 md:my-8" />
 
-        <section id="stats" className="w-full flex justify-center px-2">
-           <Suspense fallback={<DownloadStatsSkeleton />}>
-            <DownloadStatsDataFetcher>
-              {(stats: StatsData) => <DownloadStatsDisplay stats={stats} />}
-            </DownloadStatsDataFetcher>
-          </Suspense>
-        </section>
+        {/* Render the new StatsSection component */}
+        <StatsSection />
       </main>
 
       <footer className="w-full max-w-5xl text-center py-8 mt-auto">
