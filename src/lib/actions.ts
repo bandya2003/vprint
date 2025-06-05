@@ -69,7 +69,12 @@ export async function handleFileUpload(prevState: FileUploadFormState | undefine
       });
 
     if (uploadError) {
-      console.error("Supabase Storage upload error:", uploadError);
+      console.error("Supabase Storage upload error:", {
+        message: uploadError.message,
+        error: uploadError.error,
+        status: (uploadError as any).status, // For HttpError
+        stack: uploadError.stack,
+      });
       return {
         message: `Storage upload failed: ${uploadError.message}`,
         success: false,
@@ -119,7 +124,12 @@ export async function handleFileUpload(prevState: FileUploadFormState | undefine
       .single(); // We expect a single row to be inserted and returned
 
     if (dbError) {
-      console.error("Supabase DB insert error:", dbError);
+      console.error("Supabase DB insert error:", {
+        message: dbError.message,
+        details: dbError.details,
+        hint: dbError.hint,
+        code: dbError.code,
+      });
       // Attempt to clean up storage if DB insert fails
       await supabase.storage.from(SUPABASE_BUCKET_NAME).remove([storagePath]);
       return {
@@ -138,7 +148,7 @@ export async function handleFileUpload(prevState: FileUploadFormState | undefine
     };
 
   } catch (error) {
-    console.error("Upload error:", error);
+    console.error("Upload error (general catch):", error);
     let errorMessage = "An unexpected error occurred during file upload.";
     if (error instanceof Error) {
         errorMessage = error.message;
@@ -167,7 +177,12 @@ export async function getFileById(fileId: string): Promise<UploadedFile | null> 
     .single();
 
   if (error) {
-    console.error('Error fetching file by ID from Supabase:', error);
+    console.error('Error fetching file by ID from Supabase:', {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code,
+      });
     return null;
   }
   return data as UploadedFile | null;
@@ -185,7 +200,12 @@ export async function fetchFilesByGuestCode(guestCode: string): Promise<Uploaded
     .order('upload_date', { ascending: false });
 
   if (error) {
-    console.error('Error fetching files by guest code from Supabase:', error);
+    console.error('Error fetching files by guest code from Supabase:', {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code,
+      });
     return [];
   }
   return data as UploadedFile[];
@@ -207,14 +227,20 @@ export async function recordFileDownload(fileId: string): Promise<{ success: boo
       .eq('id', fileId);
 
     if (error) {
-      console.error('Error updating download timestamps in Supabase:', error);
+      console.error('Error updating download timestamps in Supabase:', {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code,
+      });
       return { success: false, message: "Failed to record download in DB." };
     }
     
     revalidatePath('/'); // Revalidate if stats are shown on the same page
     return { success: true };
-  } catch (error) {
-    console.error("Error recording download:", error);
+  } catch (e) {
+    const error = e as Error;
+    console.error("Error recording download (general catch):", error.message, error.stack);
     return { success: false, message: "Failed to record download." };
   }
 }
@@ -230,7 +256,12 @@ export async function getDownloadStats(): Promise<{ today: number; thisWeek: num
       .select('download_timestamps');
 
     if (error) {
-      console.error("Error fetching all files for stats from Supabase:", error);
+      console.error("Supabase error in getDownloadStats:", {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code,
+      });
       return { today: 0, thisWeek: 0 };
     }
 
@@ -247,14 +278,20 @@ export async function getDownloadStats(): Promise<{ today: number; thisWeek: num
                 thisWeekCount++;
               }
             } catch (parseError) {
-              console.warn("Could not parse timestamp for stats:", timestamp, parseError);
+              const pError = parseError as Error;
+              console.warn("Could not parse timestamp for stats:", timestamp, pError.message);
             }
           });
         }
       });
     }
-  } catch (error) {
-    console.error("Error processing download stats:", error);
+  } catch (e) {
+    const generalError = e as Error;
+    console.error("General error in getDownloadStats processing:", {
+        message: generalError.message || "N/A",
+        stack: generalError.stack || "N/A",
+    });
+    return { today: 0, thisWeek: 0 }; // Ensure return in case of processing error
   }
   
   return { today: todayCount, thisWeek: thisWeekCount };
