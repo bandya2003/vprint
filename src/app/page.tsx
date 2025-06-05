@@ -14,10 +14,15 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { UploadCloud } from "lucide-react";
+import { ThemeToggleButton } from "@/components/theme-toggle-button";
+
 
 export default function HomePage() {
   return (
     <div className="flex flex-col items-center justify-start min-h-screen p-4 md:p-8 space-y-10">
+      <div className="absolute top-4 right-4 md:top-6 md:right-6">
+        <ThemeToggleButton />
+      </div>
       <header className="text-center space-y-3 pt-4 md:pt-2">
         <div className="flex justify-center items-center mb-2">
           <PaperPlaneLogo size={60} />
@@ -45,7 +50,7 @@ export default function HomePage() {
               <DialogHeader>
                 <DialogTitle className="text-2xl font-headline">Upload Your File</DialogTitle>
                 <DialogDescription>
-                  Enter a guest code and choose a file. It will be available for a short period.
+                  Enter a guest code and choose a file. It will be available for a short period. Max 20MB.
                 </DialogDescription>
               </DialogHeader>
               <div className="pt-4">
