@@ -1,7 +1,11 @@
 
+"use client"; // Required for useState, useEffect, useCallback
+
+import { useState, useCallback, Suspense } from 'react'; // Import Suspense
 import { PaperPlaneLogo } from "@/components/paperplane/PaperPlaneLogo";
 import { FileUploadForm } from "@/components/paperplane/FileUploadForm";
 import { DownloadStats } from "@/components/paperplane/DownloadStats";
+import { DownloadStatsSkeleton } from "@/components/paperplane/DownloadStatsSkeleton"; // Import the skeleton
 import { FileList } from "@/components/paperplane/FileList";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
@@ -18,6 +22,12 @@ import { ThemeToggleButton } from "@/components/theme-toggle-button";
 
 
 export default function HomePage() {
+  const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
+
+  const handleUploadSuccess = useCallback(() => {
+    setIsUploadDialogOpen(false);
+  }, [setIsUploadDialogOpen]);
+
   return (
     <div className="flex flex-col items-center justify-start min-h-screen p-4 md:p-8 space-y-10">
       <div className="absolute top-4 right-4 md:top-6 md:right-6">
@@ -38,11 +48,11 @@ export default function HomePage() {
       <main className="w-full max-w-5xl space-y-10 flex flex-col items-center">
         <section id="upload-trigger" className="w-full flex flex-col items-center justify-center px-2 space-y-4">
             <p className="text-center text-muted-foreground">
-                Need to share a document? Click below to upload.
+                Need to share a document? Click below to upload. Only the first file will be processed if multiple are selected.
             </p>
-            <Dialog>
+            <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
             <DialogTrigger asChild>
-              <Button size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground px-8 py-6 text-lg shadow-md transition-transform hover:scale-105">
+              <Button onClick={() => setIsUploadDialogOpen(true)} size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground px-8 py-6 text-lg shadow-md transition-transform hover:scale-105">
                 <UploadCloud className="mr-2 h-6 w-6" /> Upload New File
               </Button>
             </DialogTrigger>
@@ -50,11 +60,11 @@ export default function HomePage() {
               <DialogHeader>
                 <DialogTitle className="text-2xl font-headline">Upload Your File</DialogTitle>
                 <DialogDescription>
-                  Enter a guest code and choose a file. It will be available for a short period. Max 20MB.
+                  Enter a guest code and choose a file. Only the first file will be processed if multiple are selected. Max 20MB.
                 </DialogDescription>
               </DialogHeader>
               <div className="pt-4">
-                <FileUploadForm />
+                <FileUploadForm onSuccess={handleUploadSuccess} />
               </div>
             </DialogContent>
           </Dialog>
@@ -69,7 +79,9 @@ export default function HomePage() {
         <Separator className="my-6 md:my-8" />
 
         <section id="stats" className="w-full flex justify-center px-2">
-          <DownloadStats />
+          <Suspense fallback={<DownloadStatsSkeleton />}>
+            <DownloadStats />
+          </Suspense>
         </section>
       </main>
 

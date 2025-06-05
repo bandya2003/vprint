@@ -3,10 +3,13 @@ import { getDownloadStats } from '@/lib/actions';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { TrendingUp, CalendarCheck2, CheckSquare } from 'lucide-react';
 
-export async function DownloadStats() {
-  // This function now fetches stats from Supabase via server actions
-  const stats = await getDownloadStats(); 
+interface StatsData {
+  today: number;
+  thisWeek: number;
+}
 
+// New Presentational Component
+function DownloadStatsDisplay({ stats }: { stats: StatsData }) {
   return (
     <Card className="w-full max-w-2xl shadow-lg">
       <CardHeader>
@@ -39,4 +42,10 @@ export async function DownloadStats() {
       </CardContent>
     </Card>
   );
+}
+
+// Server Component Wrapper that fetches data
+export async function DownloadStats() {
+  const stats = await getDownloadStats();
+  return <DownloadStatsDisplay stats={stats} />;
 }
