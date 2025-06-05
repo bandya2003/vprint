@@ -1,4 +1,6 @@
 
+// This is a synchronous component, can be used by Server or Client Components.
+// NO "use client" directive.
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { TrendingUp, CalendarCheck2, CheckSquare } from 'lucide-react';
 
@@ -35,7 +37,7 @@ export function DownloadStatsDisplay({ stats }: { stats: StatsData }) {
           <span className="text-lg font-bold text-primary">{stats.thisWeek}</span>
         </div>
         <p className="text-xs text-muted-foreground pt-2 text-center">
-          Note: "Printed" is based on file downloads. Stats are now persistent with Supabase.
+          Note: "Printed" is based on file downloads. Stats are fetched from Supabase.
         </p>
       </CardContent>
     </Card>
