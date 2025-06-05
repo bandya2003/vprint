@@ -1,12 +1,11 @@
-
 "use client"; // Required for useState, useEffect, useCallback
 
-import { useState, useCallback, Suspense } from 'react'; // Added Suspense
+import { useState, useCallback, Suspense } from 'react';
 import { PaperPlaneLogo } from "@/components/paperplane/PaperPlaneLogo";
 import { FileUploadForm } from "@/components/paperplane/FileUploadForm";
 import { DownloadStatsDataFetcher, type StatsData } from "@/components/paperplane/DownloadStatsDataFetcher";
 import { DownloadStatsDisplay } from "@/components/paperplane/DownloadStatsDisplay";
-import { DownloadStatsSkeleton } from "@/components/paperplane/DownloadStatsSkeleton"; // For Suspense fallback
+import { DownloadStatsSkeleton } from "@/components/paperplane/DownloadStatsSkeleton";
 import { FileList } from "@/components/paperplane/FileList";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
