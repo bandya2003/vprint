@@ -1,43 +1,14 @@
 
-"use client"; // Required for useState, useEffect, useCallback
-
-import { useState, useCallback, Suspense } from 'react';
-import dynamic from 'next/dynamic';
+// This is now a Server Component
+import { Suspense } from 'react';
 import { PaperPlaneLogo } from "@/components/paperplane/PaperPlaneLogo";
-import { FileUploadForm } from "@/components/paperplane/FileUploadForm";
-import StatsSection from './stats-section'; // Import the new StatsSection component
+import StatsSection from './stats-section'; 
 import { Separator } from "@/components/ui/separator";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { UploadCloud, Loader2 } from "lucide-react";
 import { ThemeToggleButton } from "@/components/theme-toggle-button";
+import { DownloadStatsSkeleton } from '@/components/paperplane/DownloadStatsSkeleton';
+import HomePageClientContent from './home-page-client-content';
 
-// Dynamically import FileList component, adjusting for default export
-const FileList = dynamic(() => import('@/components/paperplane/FileList'), {
-  ssr: false,
-  loading: () => (
-    <div className="flex justify-center items-center py-10 w-full max-w-2xl">
-      <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      <p className="ml-2 text-muted-foreground">Loading file list...</p>
-    </div>
-  ),
-});
-
-
-export default function HomePage() {
-  const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
-
-  const handleUploadSuccess = useCallback(() => {
-    setIsUploadDialogOpen(false);
-  }, [setIsUploadDialogOpen]); 
-
+export default function Page() {
   return (
     <div className="flex flex-col items-center justify-start min-h-screen p-4 md:p-8 space-y-10">
       <div className="absolute top-4 right-4 md:top-6 md:right-6">
@@ -56,40 +27,14 @@ export default function HomePage() {
       </header>
 
       <main className="w-full max-w-5xl space-y-10 flex flex-col items-center">
-        <section id="upload-trigger" className="w-full flex flex-col items-center justify-center px-2 space-y-4">
-            <p className="text-center text-muted-foreground">
-                Need to share a document? Click below to upload. Only the first file will be processed if multiple are selected.
-            </p>
-            <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={() => setIsUploadDialogOpen(true)} size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground px-8 py-6 text-lg shadow-md transition-transform hover:scale-105">
-                <UploadCloud className="mr-2 h-6 w-6" /> Upload New File
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[480px]">
-              <DialogHeader>
-                <DialogTitle className="text-2xl font-headline">Upload Your File</DialogTitle>
-                <DialogDescription>
-                  Enter a guest code and choose a file. Only the first file will be processed if multiple are selected. Max 20MB.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="pt-4">
-                <FileUploadForm onSuccess={handleUploadSuccess} />
-              </div>
-            </DialogContent>
-          </Dialog>
-        </section>
-
-        <Separator className="my-6 md:my-8" />
-
-        <section id="retrieve" className="w-full flex justify-center px-2">
-          <FileList />
-        </section>
+        <HomePageClientContent /> {/* Client component for dialog and FileList */}
         
         <Separator className="my-6 md:my-8" />
 
-        {/* Render the new StatsSection component */}
-        <StatsSection />
+        {/* StatsSection rendered by Server Component, wrapped in Suspense */}
+        <Suspense fallback={<DownloadStatsSkeleton />}>
+          <StatsSection />
+        </Suspense>
       </main>
 
       <footer className="w-full max-w-5xl text-center py-8 mt-auto">
