@@ -1,12 +1,9 @@
 
-import { Suspense } from 'react';
-import { DownloadStats } from './DownloadStats'; // The async Server Component
-import { DownloadStatsSkeleton } from './DownloadStatsSkeleton'; // The fallback
+import { getDownloadStats } from '@/lib/actions';
+import { DownloadStatsDisplay } from './DownloadStatsDisplay'; // Import the renamed presentational component
 
-export function DownloadStatsContainer() {
-  return (
-    <Suspense fallback={<DownloadStatsSkeleton />}>
-      <DownloadStats />
-    </Suspense>
-  );
+// This is now an async Server Component
+export async function DownloadStatsContainer() {
+  const stats = await getDownloadStats();
+  return <DownloadStatsDisplay stats={stats} />;
 }
