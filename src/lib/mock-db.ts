@@ -1,4 +1,2 @@
-
-import type { UploadedFile } from '@/types';
-
-export const mockFileDatabase: UploadedFile[] = [];
+// This file is no longer needed as Supabase is used for data persistence.
+// You can safely delete this file.

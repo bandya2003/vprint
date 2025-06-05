@@ -4,11 +4,13 @@
 import { z } from 'zod';
 import type { FileUploadFormState, UploadedFile } from '@/types';
 import { revalidatePath } from 'next/cache';
-import { mockFileDatabase } from './mock-db'; // Using mock DB
-import { isToday, isSameWeek, fromUnixTime } from 'date-fns';
+import { supabase } from './supabase'; // Using Supabase client
+import { isToday, isSameWeek, parseISO } from 'date-fns';
+
+const SUPABASE_BUCKET_NAME = 'vprint-files';
 
 // --- Schemas ---
-const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB (Supabase free tier allows larger, but good to have a limit)
 const ALLOWED_MIME_TYPES = [
   'application/pdf',
   'application/msword',
@@ -35,16 +37,6 @@ const FileUploadSchema = z.object({
     ),
 });
 
-// Helper function to convert ArrayBuffer to Base64
-function arrayBufferToBase64(buffer: ArrayBuffer) {
-  let binary = '';
-  const bytes = new Uint8Array(buffer);
-  const len = bytes.byteLength;
-  for (let i = 0; i < len; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
-  return btoa(binary);
-}
 
 export async function handleFileUpload(prevState: FileUploadFormState | undefined, formData: FormData): Promise<FileUploadFormState> {
   const rawFormData = {
@@ -63,31 +55,86 @@ export async function handleFileUpload(prevState: FileUploadFormState | undefine
   }
 
   const { guestCode, file } = validatedFields.data;
+  const normalizedGuestCode = guestCode.toLowerCase();
+  const uniqueFileName = `${Date.now()}-${file.name.replace(/\s+/g, '_')}`; // Ensure unique name, replace spaces
+  const storagePath = `${normalizedGuestCode}/${uniqueFileName}`; // Path in Supabase storage
 
   try {
-    const fileBuffer = await file.arrayBuffer();
-    const fileContentBase64 = arrayBufferToBase64(fileBuffer);
+    // 1. Upload file to Supabase Storage
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from(SUPABASE_BUCKET_NAME)
+      .upload(storagePath, file, {
+        cacheControl: '3600', // Optional: cache for 1 hour
+        upsert: false, // Don't overwrite if somehow a file with the exact same path exists
+      });
+
+    if (uploadError) {
+      console.error("Supabase Storage upload error:", uploadError);
+      return {
+        message: `Storage upload failed: ${uploadError.message}`,
+        success: false,
+        errors: { _form: [`Storage upload failed. Details: ${uploadError.message}`] }
+      };
+    }
+
+    if (!uploadData || !uploadData.path) {
+         return {
+            message: "Storage upload failed: No path returned from Supabase.",
+            success: false,
+            errors: { _form: ["Storage upload failed: No path returned."] }
+        };
+    }
+
+    // 2. Get public URL for the uploaded file
+    const { data: publicUrlData } = supabase.storage
+      .from(SUPABASE_BUCKET_NAME)
+      .getPublicUrl(storagePath);
+
+    if (!publicUrlData || !publicUrlData.publicUrl) {
+      // Attempt to clean up storage if URL retrieval fails
+      await supabase.storage.from(SUPABASE_BUCKET_NAME).remove([storagePath]);
+      return {
+        message: "Failed to get public URL for the uploaded file.",
+        success: false,
+        errors: { _form: ["Could not retrieve file URL after upload."] }
+      };
+    }
+    const downloadUrl = publicUrlData.publicUrl;
     
-    const newFileId = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-    const newFile: UploadedFile = {
-      id: newFileId,
-      guestCode: guestCode.toLowerCase(),
-      fileName: file.name,
-      fileType: file.type,
-      uploadDate: Date.now(), // JS Timestamp
-      downloadUrl: `/api/download/${newFileId}`, // Points to our API route
-      fileContentBase64: fileContentBase64,
-      downloadTimestamps: [],
+    // 3. Insert file metadata into Supabase database
+    const fileMetadataToInsert = {
+      guest_code: normalizedGuestCode,
+      file_name: file.name,
+      file_type: file.type,
+      upload_date: new Date().toISOString(),
+      download_url: downloadUrl,
+      storage_path: storagePath,
+      download_timestamps: [] as string[],
     };
 
-    mockFileDatabase.push(newFile);
+    const { data: dbData, error: dbError } = await supabase
+      .from('files')
+      .insert(fileMetadataToInsert)
+      .select() // Important to get the inserted row back, especially the ID
+      .single(); // We expect a single row to be inserted and returned
+
+    if (dbError) {
+      console.error("Supabase DB insert error:", dbError);
+      // Attempt to clean up storage if DB insert fails
+      await supabase.storage.from(SUPABASE_BUCKET_NAME).remove([storagePath]);
+      return {
+        message: `Database operation failed: ${dbError.message}`,
+        success: false,
+        errors: { _form: [`Database operation failed. Details: ${dbError.message}`] }
+      };
+    }
     
     revalidatePath('/');
 
     return {
       message: `File "${file.name}" uploaded successfully for guest code "${guestCode}".`,
       success: true,
-      uploadedFileId: newFile.id,
+      uploadedFileId: dbData?.id, // Supabase generates the ID
     };
 
   } catch (error) {
@@ -95,6 +142,14 @@ export async function handleFileUpload(prevState: FileUploadFormState | undefine
     let errorMessage = "An unexpected error occurred during file upload.";
     if (error instanceof Error) {
         errorMessage = error.message;
+    }
+    // Attempt to clean up storage if a general error occurs, though path might not be defined
+    if (storagePath) {
+        try {
+            await supabase.storage.from(SUPABASE_BUCKET_NAME).remove([storagePath]);
+        } catch (cleanupError) {
+            console.error("Cleanup error after general upload failure:", cleanupError);
+        }
     }
     return {
       message: errorMessage,
@@ -104,9 +159,18 @@ export async function handleFileUpload(prevState: FileUploadFormState | undefine
   }
 }
 
-async function getFileById(fileId: string): Promise<UploadedFile | null> {
-  const file = mockFileDatabase.find(f => f.id === fileId);
-  return file || null;
+export async function getFileById(fileId: string): Promise<UploadedFile | null> {
+  const { data, error } = await supabase
+    .from('files')
+    .select('*')
+    .eq('id', fileId)
+    .single();
+
+  if (error) {
+    console.error('Error fetching file by ID from Supabase:', error);
+    return null;
+  }
+  return data as UploadedFile | null;
 }
 
 
@@ -114,24 +178,40 @@ export async function fetchFilesByGuestCode(guestCode: string): Promise<Uploaded
   if (!guestCode || guestCode.trim() === "") {
     return [];
   }
-  const files = mockFileDatabase
-    .filter(f => f.guestCode === guestCode.toLowerCase())
-    .sort((a, b) => b.uploadDate - a.uploadDate); // Sort by newest first
-  return files;
+  const { data, error } = await supabase
+    .from('files')
+    .select('*')
+    .eq('guest_code', guestCode.toLowerCase())
+    .order('upload_date', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching files by guest code from Supabase:', error);
+    return [];
+  }
+  return data as UploadedFile[];
 }
 
 
 export async function recordFileDownload(fileId: string): Promise<{ success: boolean; message?: string }> {
   try {
-    const fileIndex = mockFileDatabase.findIndex(f => f.id === fileId);
-    if (fileIndex === -1) {
+    const file = await getFileById(fileId);
+    if (!file) {
       return { success: false, message: "File not found." };
     }
-    if (!mockFileDatabase[fileIndex].downloadTimestamps) {
-      mockFileDatabase[fileIndex].downloadTimestamps = [];
+
+    const newTimestamps = [...(file.download_timestamps || []), new Date().toISOString()];
+
+    const { error } = await supabase
+      .from('files')
+      .update({ download_timestamps: newTimestamps })
+      .eq('id', fileId);
+
+    if (error) {
+      console.error('Error updating download timestamps in Supabase:', error);
+      return { success: false, message: "Failed to record download in DB." };
     }
-    mockFileDatabase[fileIndex].downloadTimestamps?.push(Date.now());
-    revalidatePath('/');
+    
+    revalidatePath('/'); // Revalidate if stats are shown on the same page
     return { success: true };
   } catch (error) {
     console.error("Error recording download:", error);
@@ -145,25 +225,37 @@ export async function getDownloadStats(): Promise<{ today: number; thisWeek: num
   const now = new Date();
   
   try {
-    mockFileDatabase.forEach((file) => {
-      if (file.downloadTimestamps && Array.isArray(file.downloadTimestamps)) {
-        file.downloadTimestamps.forEach((timestamp: number) => {
-          const downloadDate = new Date(timestamp); // JS Date from timestamp
-          if (isToday(downloadDate)) {
-            todayCount++;
-          }
-          if (isSameWeek(downloadDate, now, { weekStartsOn: 1 })) { // Assuming week starts on Monday
-            thisWeekCount++;
-          }
-        });
-      }
-    });
+    const { data: allFiles, error } = await supabase
+      .from('files')
+      .select('download_timestamps');
+
+    if (error) {
+      console.error("Error fetching all files for stats from Supabase:", error);
+      return { today: 0, thisWeek: 0 };
+    }
+
+    if (allFiles) {
+      allFiles.forEach((file) => {
+        if (file.download_timestamps && Array.isArray(file.download_timestamps)) {
+          file.download_timestamps.forEach((timestamp: string) => {
+            try {
+              const downloadDate = parseISO(timestamp);
+              if (isToday(downloadDate)) {
+                todayCount++;
+              }
+              if (isSameWeek(downloadDate, now, { weekStartsOn: 1 })) {
+                thisWeekCount++;
+              }
+            } catch (parseError) {
+              console.warn("Could not parse timestamp for stats:", timestamp, parseError);
+            }
+          });
+        }
+      });
+    }
   } catch (error) {
-    console.error("Error fetching download stats:", error);
+    console.error("Error processing download stats:", error);
   }
   
   return { today: todayCount, thisWeek: thisWeekCount };
 }
-
-// Export getFileById for use in the API route
-export { getFileById };

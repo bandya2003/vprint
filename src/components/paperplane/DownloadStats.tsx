@@ -4,7 +4,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { TrendingUp, CalendarCheck2, CheckSquare } from 'lucide-react';
 
 export async function DownloadStats() {
-  const stats = await getDownloadStats();
+  // This function now fetches stats from Supabase via server actions
+  const stats = await getDownloadStats(); 
 
   return (
     <Card className="w-full max-w-2xl shadow-lg">
@@ -33,7 +34,7 @@ export async function DownloadStats() {
           <span className="text-lg font-bold text-primary">{stats.thisWeek}</span>
         </div>
         <p className="text-xs text-muted-foreground pt-2 text-center">
-          Note: "Printed" is based on file downloads. Stats are indicative and reset with server restarts in this mock version.
+          Note: "Printed" is based on file downloads. Stats are now persistent with Supabase.
         </p>
       </CardContent>
     </Card>
