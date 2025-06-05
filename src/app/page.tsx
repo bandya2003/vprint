@@ -1,12 +1,13 @@
+
 "use client"; // Required for useState, useEffect, useCallback
 
 import { useState, useCallback, Suspense } from 'react';
+import dynamic from 'next/dynamic';
 import { PaperPlaneLogo } from "@/components/paperplane/PaperPlaneLogo";
 import { FileUploadForm } from "@/components/paperplane/FileUploadForm";
-import { DownloadStatsDataFetcher, type StatsData } from "@/components/paperplane/DownloadStatsDataFetcher";
-import { DownloadStatsDisplay } from "@/components/paperplane/DownloadStatsDisplay";
-import { DownloadStatsSkeleton } from "@/components/paperplane/DownloadStatsSkeleton";
-import { FileList } from "@/components/paperplane/FileList";
+import { DownloadStatsDataFetcher, type StatsData } from '@/components/paperplane/DownloadStatsDataFetcher';
+import { DownloadStatsDisplay } from '@/components/paperplane/DownloadStatsDisplay';
+import { DownloadStatsSkeleton } from '@/components/paperplane/DownloadStatsSkeleton';
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,8 +18,19 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { UploadCloud } from "lucide-react";
+import { UploadCloud, Loader2 } from "lucide-react";
 import { ThemeToggleButton } from "@/components/theme-toggle-button";
+
+// Dynamically import FileList component
+const FileList = dynamic(() => import('@/components/paperplane/FileList').then(mod => mod.FileList), {
+  ssr: false,
+  loading: () => (
+    <div className="flex justify-center items-center py-10 w-full max-w-2xl">
+      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <p className="ml-2 text-muted-foreground">Loading file list...</p>
+    </div>
+  ),
+});
 
 
 export default function HomePage() {
@@ -26,7 +38,7 @@ export default function HomePage() {
 
   const handleUploadSuccess = useCallback(() => {
     setIsUploadDialogOpen(false);
-  }, [setIsUploadDialogOpen]);
+  }, []); // setIsUploadDialogOpen is stable
 
   return (
     <div className="flex flex-col items-center justify-start min-h-screen p-4 md:p-8 space-y-10">
@@ -79,7 +91,7 @@ export default function HomePage() {
         <Separator className="my-6 md:my-8" />
 
         <section id="stats" className="w-full flex justify-center px-2">
-          <Suspense fallback={<DownloadStatsSkeleton />}>
+           <Suspense fallback={<DownloadStatsSkeleton />}>
             <DownloadStatsDataFetcher>
               {(stats: StatsData) => <DownloadStatsDisplay stats={stats} />}
             </DownloadStatsDataFetcher>
