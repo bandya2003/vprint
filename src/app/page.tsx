@@ -1,3 +1,4 @@
+
 import { PaperPlaneLogo } from "@/components/paperplane/PaperPlaneLogo";
 import { FileUploadForm } from "@/components/paperplane/FileUploadForm";
 import { DownloadStats } from "@/components/paperplane/DownloadStats";
@@ -12,10 +13,10 @@ export default function HomePage() {
           <PaperPlaneLogo size={60} />
         </div>
         <h1 className="text-4xl md:text-5xl font-bold text-foreground">
-          Welcome to PaperPlane
+          Welcome to Vprint
         </h1>
         <p className="text-lg text-muted-foreground max-w-xl">
-          A simple, secure way to quickly upload and retrieve documents for printing. No logins, just your files when you need them.
+          No more WhatsApp juggling. Quickly retrieve and print your documents.
         </p>
       </header>
 
@@ -39,7 +40,7 @@ export default function HomePage() {
 
       <footer className="w-full max-w-5xl text-center py-8 mt-auto">
         <p className="text-sm text-muted-foreground">
-          &copy; {new Date().getFullYear()} PaperPlane. Files are automatically deleted for your privacy (mock feature).
+          &copy; {new Date().getFullYear()} Vprint. Files are automatically deleted for your privacy (mock feature).
         </p>
       </footer>
     </div>
