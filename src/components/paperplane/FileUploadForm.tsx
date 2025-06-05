@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useRef, useTransition } from 'react'; // Added useTransition
+import { useEffect, useRef, useTransition } from 'react';
 import { useActionState } from 'react';
 import { useFormStatus } from 'react-dom';
 import { useForm } from 'react-hook-form';
@@ -35,9 +35,11 @@ const formSchema = z.object({
     .regex(/^[a-zA-Z0-9_.-]*$/, "Guest code can only contain letters, numbers, underscore, dot, or hyphen."),
   file: z
     .custom<FileList>((val) => val instanceof FileList && val.length > 0, "File is required.")
-    .refine((fileList) => fileList.length > 0 && fileList[0].size <= MAX_FILE_SIZE, `Max file size is 20MB.`)
+    .transform((fileList) => fileList.item(0)) // Take the first file
+    .refine((file): file is File => file instanceof File && file.size > 0, "File cannot be empty.")
+    .refine((file) => file.size <= MAX_FILE_SIZE, `Max file size is 20MB.`)
     .refine(
-      (fileList) => fileList.length > 0 && ALLOWED_MIME_TYPES.includes(fileList[0].type),
+      (file) => ALLOWED_MIME_TYPES.includes(file.type),
       `Invalid file type. Only ${ALLOWED_EXTENSIONS_DISPLAY} files are accepted.`
     ),
 });
@@ -60,25 +62,29 @@ interface FileUploadFormProps {
 
 export function FileUploadForm({ onSuccess }: FileUploadFormProps) {
   const { toast } = useToast();
-  // Renamed isPending to isActionPending for clarity
   const [state, formAction, isActionPending] = useActionState<FileUploadFormState | undefined, FormData>(handleFileUpload, undefined);
   const formRef = useRef<HTMLFormElement>(null);
-  const [isTransitionPending, startTransition] = useTransition(); // For wrapping the action call
+  const [isTransitionPending, startTransition] = useTransition();
 
-  const { register, handleSubmit, formState: { errors }, reset: resetReactHookForm } = useForm<FormDataSchema>({
+  const { register, handleSubmit, formState: { errors }, reset: resetReactHookForm, setValue } = useForm<FormDataSchema>({
     resolver: zodResolver(formSchema),
     mode: "onChange",
   });
 
   useEffect(() => {
-    // Effect should depend on isActionPending (from useActionState) to react after the server action completes.
     if (!isActionPending && state?.success) {
       toast({
         title: "Success!",
         description: state.message,
+        duration: 5000, // Auto-dismiss after 5 seconds
       });
       formRef.current?.reset();
       resetReactHookForm();
+      // Clear the file input visually by resetting its value through react-hook-form
+      // This assumes your file input is registered with the name "file"
+      setValue('file', new DataTransfer().files, { shouldValidate: false, shouldDirty: false });
+
+
       if (onSuccess) {
         onSuccess();
       }
@@ -92,21 +98,37 @@ export function FileUploadForm({ onSuccess }: FileUploadFormProps) {
         variant: "destructive",
       });
     }
-  }, [state, toast, resetReactHookForm, isActionPending, onSuccess]);
+  }, [state, toast, resetReactHookForm, isActionPending, onSuccess, setValue]);
 
-  // This handler is called by react-hook-form's handleSubmit after successful client-side validation
   const onValidSubmit = (data: FormDataSchema) => {
     if (formRef.current) {
-      const formData = new FormData(formRef.current); // Get current form data
-      startTransition(() => { // Wrap the call to formAction in a transition
-        formAction(formData);
+      const formData = new FormData(formRef.current);
+      // Ensure only the first file is appended if multiple were selected by the user
+      // This aligns with the schema taking only the first file.
+      // Note: 'data.file' here is the single File object processed by Zod.
+      // If the input element itself still holds multiple files,
+      // we need to ensure FormData reflects that only one is intended.
+      // However, HTML FormData with a file input named "file" that has selected multiple files
+      // and then `new FormData(formRef.current)` will include all those files under the same name.
+      // The server action `handleFileUpload` also expects a single file.
+      // The schema already transforms to take the first file.
+      // We need to make sure the FormData passed to the action contains only that one file.
+
+      const singleFileFormData = new FormData();
+      singleFileFormData.append('guestCode', data.guestCode);
+      if (data.file) { // data.file is the single File object from Zod
+        singleFileFormData.append('file', data.file, data.file.name);
+      }
+
+
+      startTransition(() => {
+        formAction(singleFileFormData);
       });
     }
   };
 
   return (
     <Card className="w-full border-none shadow-none">
-      {/* react-hook-form's handleSubmit will call onValidSubmit if validation passes */}
       <form ref={formRef} onSubmit={handleSubmit(onValidSubmit)} className="space-y-6">
         <CardContent className="space-y-4 pb-0">
           <div className="space-y-2">
@@ -123,12 +145,13 @@ export function FileUploadForm({ onSuccess }: FileUploadFormProps) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="file">File</Label>
+            <Label htmlFor="file-upload-input">File</Label> {/* Changed id for clarity */}
             <Input
-              id="file"
+              id="file-upload-input" // Match label's htmlFor
               type="file"
               accept={ALLOWED_EXTENSIONS_DISPLAY}
-              {...register("file")}
+              multiple // Allow multiple file selection in browser dialog
+              {...register("file")} // react-hook-form will handle the FileList
               className={`pt-2 ${errors.file ? "border-destructive" : ""}`}
             />
             <p className="text-xs text-muted-foreground">Max 20MB. Accepted: {ALLOWED_EXTENSIONS_DISPLAY}</p>
@@ -144,3 +167,5 @@ export function FileUploadForm({ onSuccess }: FileUploadFormProps) {
     </Card>
   );
 }
+
+    
