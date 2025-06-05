@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useRef, useTransition } from 'react'; // Added useTransition
+import { useEffect, useRef } from 'react';
 import { useActionState } from 'react'; 
 import { useFormStatus } from 'react-dom'; 
 import { useForm } from 'react-hook-form';
@@ -12,7 +12,7 @@ import type { FileUploadFormState } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardFooter } from '@/components/ui/card'; // Removed CardHeader, CardTitle, CardDescription
 import { useToast } from '@/hooks/use-toast';
 import { UploadCloud, Loader2 } from 'lucide-react';
 
@@ -54,11 +54,16 @@ function SubmitButton() {
   );
 }
 
-export function FileUploadForm() {
+// Added onSuccess prop to potentially close dialog
+interface FileUploadFormProps {
+  onSuccess?: () => void;
+}
+
+export function FileUploadForm({ onSuccess }: FileUploadFormProps) {
   const { toast } = useToast();
-  const [state, formAction] = useActionState<FileUploadFormState | undefined, FormData>(handleFileUpload, undefined);
+  // The useActionState hook manages the form state and action
+  const [state, formAction, isPending] = useActionState<FileUploadFormState | undefined, FormData>(handleFileUpload, undefined);
   const formRef = useRef<HTMLFormElement>(null);
-  const [, startTransition] = useTransition(); // Hook for starting a transition
 
   const { register, handleSubmit, formState: { errors }, reset: resetReactHookForm } = useForm<FormDataSchema>({
     resolver: zodResolver(formSchema),
@@ -66,14 +71,17 @@ export function FileUploadForm() {
   });
 
   useEffect(() => {
-    if (state?.success) {
+    if (!isPending && state?.success) {
       toast({
         title: "Success!",
         description: state.message,
       });
       formRef.current?.reset(); 
-      resetReactHookForm(); 
-    } else if (state?.message && !state.success) {
+      resetReactHookForm();
+      if (onSuccess) { // Call onSuccess if provided (e.g., to close dialog)
+        onSuccess();
+      }
+    } else if (!isPending && state?.message && !state.success) {
       const errorMessages = state.errors ? 
         Object.values(state.errors).flat().join("\n") : 
         state.message;
@@ -83,27 +91,17 @@ export function FileUploadForm() {
         variant: "destructive",
       });
     }
-  }, [state, toast, resetReactHookForm]);
-
-  const onFormSubmit = (data: FormDataSchema) => {
-    const formData = new FormData();
-    formData.append('guestCode', data.guestCode);
-    if (data.file && data.file.length > 0) {
-      formData.append('file', data.file[0]);
-    }
-    startTransition(() => { // Wrap the action call in startTransition
-      formAction(formData);
-    });
-  };
+  }, [state, toast, resetReactHookForm, isPending, onSuccess]);
   
+  // The action prop on the form handles submission via the Server Action
   return (
-    <Card className="w-full max-w-md shadow-lg">
-      <CardHeader>
-        <CardTitle className="text-2xl font-headline">Upload Your File</CardTitle>
-        <CardDescription>Enter a guest code and choose a file to upload. Your file will be available for a short period.</CardDescription>
-      </CardHeader>
-      <form ref={formRef} onSubmit={handleSubmit(onFormSubmit)} action={formAction} className="space-y-6">
-        <CardContent className="space-y-4">
+    // Removed CardHeader, CardTitle, CardDescription as they are now in DialogHeader
+    // The Card itself can be removed if DialogContent styling is sufficient, but keeping it for now
+    // for consistent internal padding and structure.
+    // Removed shadow-lg from Card as DialogContent has its own shadow.
+    <Card className="w-full border-none shadow-none">
+      <form ref={formRef} onSubmit={handleSubmit((data) => formAction(new FormData(formRef.current!)))} className="space-y-6">
+        <CardContent className="space-y-4 pb-0">
           <div className="space-y-2">
             <Label htmlFor="guestCode">Guest Code</Label>
             <Input 
