@@ -1,10 +1,11 @@
 
 "use client"; // Required for useState, useEffect, useCallback
 
-import { useState, useCallback } from 'react'; // Removed Suspense from here
+import { useState, useCallback, Suspense } from 'react'; // Added Suspense
 import { PaperPlaneLogo } from "@/components/paperplane/PaperPlaneLogo";
 import { FileUploadForm } from "@/components/paperplane/FileUploadForm";
-import { DownloadStatsContainer } from "@/components/paperplane/DownloadStatsContainer"; // Import the new container
+import { DownloadStatsContainer } from "@/components/paperplane/DownloadStatsContainer"; // This is now the async SC
+import { DownloadStatsSkeleton } from "@/components/paperplane/DownloadStatsSkeleton"; // For Suspense fallback
 import { FileList } from "@/components/paperplane/FileList";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
@@ -25,7 +26,7 @@ export default function HomePage() {
 
   const handleUploadSuccess = useCallback(() => {
     setIsUploadDialogOpen(false);
-  }, [setIsUploadDialogOpen]);
+  }, [setIsUploadDialogOpen]); // Dependency array includes setIsUploadDialogOpen
 
   return (
     <div className="flex flex-col items-center justify-start min-h-screen p-4 md:p-8 space-y-10">
@@ -78,7 +79,9 @@ export default function HomePage() {
         <Separator className="my-6 md:my-8" />
 
         <section id="stats" className="w-full flex justify-center px-2">
-          <DownloadStatsContainer />
+          <Suspense fallback={<DownloadStatsSkeleton />}>
+            <DownloadStatsContainer />
+          </Suspense>
         </section>
       </main>
 
