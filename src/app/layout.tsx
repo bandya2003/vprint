@@ -1,10 +1,11 @@
+
 import type {Metadata} from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
-  title: 'PaperPlane - Easy File Sharing',
-  description: 'Upload and retrieve documents easily for printing.',
+  title: 'Vprint - Quick Document Retrieval',
+  description: 'No more WhatsApp juggling. Quickly retrieve and print your documents.',
 };
 
 export default function RootLayout({
