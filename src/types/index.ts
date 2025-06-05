@@ -3,11 +3,12 @@ export interface UploadedFile {
   id: string;
   guestCode: string;
   fileName: string;
-  fileType: string;
+  fileType: string; // MIME type
   uploadDate: string; // ISO date string
-  downloadUrl: string;
-  storagePath: string; // Path in Firebase Storage or similar
-  downloadTimestamps?: string[]; // Array of ISO date strings for when the file was downloaded
+  downloadUrl: string; // Will point to our API route
+  storagePath: string; // Conceptual path, less relevant for in-memory
+  downloadTimestamps?: string[];
+  fileContentBase64?: string; // Stores the actual file content as Base64
 }
 
 export interface FileUploadFormState {

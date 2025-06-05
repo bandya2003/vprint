@@ -1,12 +1,13 @@
+
 "use client";
 
 import type { UploadedFile } from '@/types';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card'; // Removed CardHeader, CardDescription, CardTitle
+import { Card, CardContent } from '@/components/ui/card';
 import { FileText, FileImage, Download, File as FileIcon, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useTransition } from 'react';
-import { recordFileDownload } from '@/lib/actions';
+import { recordFileDownload } from '@/lib/actions'; // Server action
 import { useToast } from '@/hooks/use-toast';
 
 interface FileListItemProps {
@@ -33,11 +34,13 @@ export function FileListItem({ file }: FileListItemProps) {
 
   const handleDownload = () => {
     startDownloadTransition(async () => {
+      // First, call the server action to record the download
       const result = await recordFileDownload(file.id);
+      
       if (result.success) {
-        // The downloadUrl is a placeholder image URL from placehold.co
-        // In a real app, this would be a direct link to the file or a signed URL.
-        window.open(file.downloadUrl, '_blank');
+        // If recording was successful, then open the download URL
+        // The downloadUrl now points to our API route: /api/download/[fileId]
+        window.open(file.downloadUrl, '_blank'); 
         toast({
           title: "Download Started",
           description: `"${file.fileName}" should begin downloading.`,
@@ -45,7 +48,7 @@ export function FileListItem({ file }: FileListItemProps) {
       } else {
         toast({
           title: "Download Error",
-          description: result.message || "Could not record download.",
+          description: result.message || "Could not prepare file for download.",
           variant: "destructive",
         });
       }

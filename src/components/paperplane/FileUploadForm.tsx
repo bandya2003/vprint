@@ -2,8 +2,8 @@
 "use client";
 
 import { useEffect, useRef } from 'react';
-import { useActionState } from 'react'; // Changed from react-dom's useFormState
-import { useFormStatus } from 'react-dom'; // useFormStatus remains from react-dom
+import { useActionState } from 'react'; 
+import { useFormStatus } from 'react-dom'; 
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -16,7 +16,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { useToast } from '@/hooks/use-toast';
 import { UploadCloud, Loader2 } from 'lucide-react';
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 const ALLOWED_MIME_TYPES = [
   'application/pdf',
   'application/msword',
@@ -24,8 +24,9 @@ const ALLOWED_MIME_TYPES = [
   'image/png',
   'image/jpeg',
   'image/jpg',
+  'text/plain',
 ];
-const ALLOWED_EXTENSIONS_DISPLAY = ".pdf, .doc, .docx, .png, .jpg, .jpeg";
+const ALLOWED_EXTENSIONS_DISPLAY = ".pdf, .doc, .docx, .png, .jpg, .jpeg, .txt";
 
 const formSchema = z.object({
   guestCode: z.string()
@@ -34,7 +35,7 @@ const formSchema = z.object({
     .regex(/^[a-zA-Z0-9_.-]*$/, "Guest code can only contain letters, numbers, underscore, dot, or hyphen."),
   file: z
     .custom<FileList>((val) => val instanceof FileList && val.length > 0, "File is required.")
-    .refine((fileList) => fileList.length > 0 && fileList[0].size <= MAX_FILE_SIZE, `Max file size is 10MB.`)
+    .refine((fileList) => fileList.length > 0 && fileList[0].size <= MAX_FILE_SIZE, `Max file size is ${MAX_FILE_SIZE / (1024*1024)}MB.`)
     .refine(
       (fileList) => fileList.length > 0 && ALLOWED_MIME_TYPES.includes(fileList[0].type),
       `Invalid file type. Only ${ALLOWED_EXTENSIONS_DISPLAY} files are accepted.`
@@ -55,12 +56,12 @@ function SubmitButton() {
 
 export function FileUploadForm() {
   const { toast } = useToast();
-  const [state, formAction] = useActionState<FileUploadFormState | undefined, FormData>(handleFileUpload, undefined); // Updated to useActionState
+  const [state, formAction] = useActionState<FileUploadFormState | undefined, FormData>(handleFileUpload, undefined);
   const formRef = useRef<HTMLFormElement>(null);
 
   const { register, handleSubmit, formState: { errors }, reset: resetReactHookForm } = useForm<FormDataSchema>({
     resolver: zodResolver(formSchema),
-    mode: "onChange", // Validate on change for better UX
+    mode: "onChange", 
   });
 
   useEffect(() => {
@@ -69,8 +70,8 @@ export function FileUploadForm() {
         title: "Success!",
         description: state.message,
       });
-      formRef.current?.reset(); // Reset native form
-      resetReactHookForm(); // Reset react-hook-form
+      formRef.current?.reset(); 
+      resetReactHookForm(); 
     } else if (state?.message && !state.success) {
       const errorMessages = state.errors ? 
         Object.values(state.errors).flat().join("\n") : 
@@ -122,7 +123,7 @@ export function FileUploadForm() {
               {...register("file")}
               className={`pt-2 ${errors.file ? "border-destructive" : ""}`}
             />
-            <p className="text-xs text-muted-foreground">Max 10MB. Accepted: {ALLOWED_EXTENSIONS_DISPLAY}</p>
+            <p className="text-xs text-muted-foreground">Max ${MAX_FILE_SIZE / (1024*1024)}MB. Accepted: {ALLOWED_EXTENSIONS_DISPLAY}</p>
             {errors.file && <p className="text-sm text-destructive">{errors.file.message}</p>}
             {state?.errors?.file && <p className="text-sm text-destructive">{state.errors.file.join(', ')}</p>}
           </div>
