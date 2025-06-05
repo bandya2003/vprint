@@ -27,6 +27,7 @@ async function fetchServerSideStats(): Promise<StatsData> {
         hint: error.hint,
         code: error.code,
       });
+      // Return zero stats on error to prevent breaking the page
       return { today: 0, thisWeek: 0 };
     }
 
@@ -56,6 +57,7 @@ async function fetchServerSideStats(): Promise<StatsData> {
         message: generalError.message || "N/A",
         stack: generalError.stack || "N/A",
     });
+    // Return zero stats on error
     return { today: 0, thisWeek: 0 };
   }
   return { today: todayCount, thisWeek: thisWeekCount };
@@ -64,5 +66,6 @@ async function fetchServerSideStats(): Promise<StatsData> {
 // This is an async Server Component.
 export async function DownloadStatsContainer() {
   const stats = await fetchServerSideStats();
+  // DownloadStatsDisplay is now correctly marked as 'use client'
   return <DownloadStatsDisplay stats={stats} />;
 }
