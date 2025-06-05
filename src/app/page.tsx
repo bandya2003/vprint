@@ -1,11 +1,10 @@
 
 "use client"; // Required for useState, useEffect, useCallback
 
-import { useState, useCallback, Suspense } from 'react'; // Import Suspense
+import { useState, useCallback } from 'react'; // Removed Suspense from here
 import { PaperPlaneLogo } from "@/components/paperplane/PaperPlaneLogo";
 import { FileUploadForm } from "@/components/paperplane/FileUploadForm";
-import { DownloadStats } from "@/components/paperplane/DownloadStats";
-import { DownloadStatsSkeleton } from "@/components/paperplane/DownloadStatsSkeleton"; // Import the skeleton
+import { DownloadStatsContainer } from "@/components/paperplane/DownloadStatsContainer"; // Import the new container
 import { FileList } from "@/components/paperplane/FileList";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
@@ -79,9 +78,7 @@ export default function HomePage() {
         <Separator className="my-6 md:my-8" />
 
         <section id="stats" className="w-full flex justify-center px-2">
-          <Suspense fallback={<DownloadStatsSkeleton />}>
-            <DownloadStats />
-          </Suspense>
+          <DownloadStatsContainer />
         </section>
       </main>
 
