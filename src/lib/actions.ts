@@ -1,12 +1,18 @@
+
 "use server";
 
 import { z } from 'zod';
-import type { UploadedFile, FileUploadFormState } from '@/types';
+import type { FileUploadFormState, UploadedFile } from '@/types';
 import { revalidatePath } from 'next/cache';
-import { isToday, isSameWeek, parseISO } from 'date-fns';
+import { 
+  addFileToDb, 
+  getFilesByGuestCodeFromDb, 
+  recordFileDownloadInDb,
+  getDownloadStatsFromDb
+} from './mock-db'; // Import from mock-db
 
 // --- Schemas ---
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 const ALLOWED_MIME_TYPES = [
   'application/pdf',
   'application/msword',
@@ -14,8 +20,9 @@ const ALLOWED_MIME_TYPES = [
   'image/png',
   'image/jpeg',
   'image/jpg',
+  'text/plain', // Added for simpler testing
 ];
-const ALLOWED_EXTENSIONS_DISPLAY = ".pdf, .doc, .docx, .png, .jpg, .jpeg";
+const ALLOWED_EXTENSIONS_DISPLAY = ".pdf, .doc, .docx, .png, .jpg, .jpeg, .txt";
 
 const FileUploadSchema = z.object({
   guestCode: z.string()
@@ -25,15 +32,27 @@ const FileUploadSchema = z.object({
   file: z
     .instanceof(File, { message: "File is required."})
     .refine((file) => file.size > 0, "File cannot be empty.")
-    .refine((file) => file.size <= MAX_FILE_SIZE, `Max file size is 10MB.`)
+    .refine((file) => file.size <= MAX_FILE_SIZE, `Max file size is ${MAX_FILE_SIZE / (1024*1024)}MB.`)
     .refine(
       (file) => ALLOWED_MIME_TYPES.includes(file.type),
       `Invalid file type. Only ${ALLOWED_EXTENSIONS_DISPLAY} files are accepted.`
     ),
 });
 
-// --- Mock Database and Storage ---
-let mockFileDatabase: UploadedFile[] = [];
+async function fileToArrayBuffer(file: File): Promise<ArrayBuffer> {
+  const blob = new Blob([file]);
+  return await blob.arrayBuffer();
+}
+
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  let binary = '';
+  const bytes = new Uint8Array(buffer);
+  const len = bytes.byteLength;
+  for (let i = 0; i < len; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+}
 
 export async function handleFileUpload(prevState: FileUploadFormState | undefined, formData: FormData): Promise<FileUploadFormState> {
   const rawFormData = {
@@ -57,19 +76,24 @@ export async function handleFileUpload(prevState: FileUploadFormState | undefine
     const fileName = file.name;
     const fileType = file.type;
     
+    const arrayBuffer = await fileToArrayBuffer(file);
+    const base64Content = arrayBufferToBase64(arrayBuffer);
+
+    const newFileId = Math.random().toString(36).substring(2, 15);
     const newFile: UploadedFile = {
-      id: Math.random().toString(36).substring(2, 15),
+      id: newFileId,
       guestCode: guestCode.toLowerCase(),
       fileName,
       fileType,
       uploadDate: new Date().toISOString(),
-      downloadUrl: `https://placehold.co/800x600.png?text=${encodeURIComponent('File: ' + fileName)}`, // Updated placeholder
-      storagePath: `uploads/${guestCode}/${Date.now()}-${fileName}`,
+      downloadUrl: `/api/download/${newFileId}`, // Points to our new API route
+      storagePath: `uploads/mock/${guestCode}/${Date.now()}-${fileName}`, // Conceptual
       downloadTimestamps: [],
+      fileContentBase64: base64Content,
     };
 
-    mockFileDatabase.push(newFile);
-    revalidatePath('/');
+    addFileToDb(newFile);
+    revalidatePath('/'); // Revalidate to update lists and stats
 
     return {
       message: `File "${fileName}" uploaded successfully for guest code "${guestCode}".`,
@@ -88,49 +112,18 @@ export async function handleFileUpload(prevState: FileUploadFormState | undefine
 }
 
 export async function fetchFilesByGuestCode(guestCode: string): Promise<UploadedFile[]> {
-  if (!guestCode || guestCode.trim() === "") {
-    return [];
-  }
-  const files = mockFileDatabase.filter(file => file.guestCode === guestCode.toLowerCase());
-  return files.sort((a, b) => new Date(b.uploadDate).getTime() - new Date(a.uploadDate).getTime());
+  return getFilesByGuestCodeFromDb(guestCode);
 }
 
 export async function recordFileDownload(fileId: string): Promise<{ success: boolean; message?: string }> {
-  const fileIndex = mockFileDatabase.findIndex(f => f.id === fileId);
-  if (fileIndex === -1) {
-    return { success: false, message: "File not found." };
+  const success = recordFileDownloadInDb(fileId);
+  if (!success) {
+    return { success: false, message: "File not found for recording download." };
   }
-  if (!mockFileDatabase[fileIndex].downloadTimestamps) {
-    mockFileDatabase[fileIndex].downloadTimestamps = [];
-  }
-  mockFileDatabase[fileIndex].downloadTimestamps!.push(new Date().toISOString());
   revalidatePath('/'); // To update stats if they are on the same page
   return { success: true };
 }
 
 export async function getDownloadStats(): Promise<{ today: number; thisWeek: number }> {
-  let todayCount = 0;
-  let thisWeekCount = 0;
-  const now = new Date();
-
-  mockFileDatabase.forEach(file => {
-    if (file.downloadTimestamps) {
-      file.downloadTimestamps.forEach(timestampStr => {
-        try {
-          const timestamp = parseISO(timestampStr);
-          if (isToday(timestamp)) {
-            todayCount++;
-          }
-          // isSameWeek by default considers Sunday as the start of the week.
-          // For Monday as start: isSameWeek(timestamp, now, { weekStartsOn: 1 })
-          if (isSameWeek(timestamp, now, { weekStartsOn: 1 })) {
-            thisWeekCount++;
-          }
-        } catch (e) {
-          console.error("Error parsing date for stats: ", timestampStr, e);
-        }
-      });
-    }
-  });
-  return { today: todayCount, thisWeek: thisWeekCount };
+  return getDownloadStatsFromDb();
 }
