@@ -4,27 +4,8 @@
 import { z } from 'zod';
 import type { FileUploadFormState, UploadedFile } from '@/types';
 import { revalidatePath } from 'next/cache';
-import { db, storage } from './firebase';
-import { 
-  collection, 
-  addDoc, 
-  query, 
-  where, 
-  getDocs, 
-  doc, 
-  updateDoc, 
-  arrayUnion, 
-  Timestamp,
-  orderBy,
-  getDoc
-} from 'firebase/firestore';
-import { 
-  ref as storageRef, 
-  uploadBytes, 
-  getDownloadURL 
-} from 'firebase/storage';
-import { isToday, isSameWeek, parseISO } from 'date-fns';
-
+import { mockFileDatabase } from './mock-db'; // Using mock DB
+import { isToday, isSameWeek, fromUnixTime } from 'date-fns';
 
 // --- Schemas ---
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
@@ -54,6 +35,16 @@ const FileUploadSchema = z.object({
     ),
 });
 
+// Helper function to convert ArrayBuffer to Base64
+function arrayBufferToBase64(buffer: ArrayBuffer) {
+  let binary = '';
+  const bytes = new Uint8Array(buffer);
+  const len = bytes.byteLength;
+  for (let i = 0; i < len; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+}
 
 export async function handleFileUpload(prevState: FileUploadFormState | undefined, formData: FormData): Promise<FileUploadFormState> {
   const rawFormData = {
@@ -75,29 +66,28 @@ export async function handleFileUpload(prevState: FileUploadFormState | undefine
 
   try {
     const fileBuffer = await file.arrayBuffer();
-    const uniqueFileName = `${Date.now()}-${file.name}`;
-    const filePath = `uploads/${guestCode.toLowerCase()}/${uniqueFileName}`;
-    const fileStorageRef = storageRef(storage, filePath);
-
-    await uploadBytes(fileStorageRef, fileBuffer, { contentType: file.type });
-    const downloadUrl = await getDownloadURL(fileStorageRef);
-
-    const fileDocRef = await addDoc(collection(db, "files"), {
+    const fileContentBase64 = arrayBufferToBase64(fileBuffer);
+    
+    const newFileId = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    const newFile: UploadedFile = {
+      id: newFileId,
       guestCode: guestCode.toLowerCase(),
       fileName: file.name,
       fileType: file.type,
-      uploadDate: Timestamp.now(),
-      downloadUrl: downloadUrl,
-      storagePath: filePath,
+      uploadDate: Date.now(), // JS Timestamp
+      downloadUrl: `/api/download/${newFileId}`, // Points to our API route
+      fileContentBase64: fileContentBase64,
       downloadTimestamps: [],
-    });
+    };
+
+    mockFileDatabase.push(newFile);
     
     revalidatePath('/');
 
     return {
       message: `File "${file.name}" uploaded successfully for guest code "${guestCode}".`,
       success: true,
-      uploadedFileId: fileDocRef.id,
+      uploadedFileId: newFile.id,
     };
 
   } catch (error) {
@@ -114,25 +104,9 @@ export async function handleFileUpload(prevState: FileUploadFormState | undefine
   }
 }
 
-async function getFileByIdFromFirestore(fileId: string): Promise<UploadedFile | null> {
-  const fileDocRef = doc(db, "files", fileId);
-  const fileSnap = await getDoc(fileDocRef);
-
-  if (fileSnap.exists()) {
-    const data = fileSnap.data();
-    return {
-      id: fileSnap.id,
-      guestCode: data.guestCode,
-      fileName: data.fileName,
-      fileType: data.fileType,
-      uploadDate: data.uploadDate, // Firestore Timestamp
-      downloadUrl: data.downloadUrl,
-      storagePath: data.storagePath,
-      downloadTimestamps: data.downloadTimestamps || [], // Firestore Timestamp array
-    };
-  } else {
-    return null;
-  }
+async function getFileById(fileId: string): Promise<UploadedFile | null> {
+  const file = mockFileDatabase.find(f => f.id === fileId);
+  return file || null;
 }
 
 
@@ -140,43 +114,28 @@ export async function fetchFilesByGuestCode(guestCode: string): Promise<Uploaded
   if (!guestCode || guestCode.trim() === "") {
     return [];
   }
-  const filesCollection = collection(db, "files");
-  const q = query(
-    filesCollection, 
-    where("guestCode", "==", guestCode.toLowerCase()),
-    orderBy("uploadDate", "desc")
-  );
-
-  const querySnapshot = await getDocs(q);
-  const files: UploadedFile[] = [];
-  querySnapshot.forEach((doc) => {
-    const data = doc.data();
-    files.push({
-      id: doc.id,
-      guestCode: data.guestCode,
-      fileName: data.fileName,
-      fileType: data.fileType,
-      uploadDate: data.uploadDate, // Firestore Timestamp
-      downloadUrl: data.downloadUrl, // This is the Firebase Storage URL
-      storagePath: data.storagePath,
-      downloadTimestamps: data.downloadTimestamps || [], // Firestore Timestamp array
-    });
-  });
+  const files = mockFileDatabase
+    .filter(f => f.guestCode === guestCode.toLowerCase())
+    .sort((a, b) => b.uploadDate - a.uploadDate); // Sort by newest first
   return files;
 }
 
 
 export async function recordFileDownload(fileId: string): Promise<{ success: boolean; message?: string }> {
   try {
-    const fileDocRef = doc(db, "files", fileId);
-    await updateDoc(fileDocRef, {
-      downloadTimestamps: arrayUnion(Timestamp.now())
-    });
+    const fileIndex = mockFileDatabase.findIndex(f => f.id === fileId);
+    if (fileIndex === -1) {
+      return { success: false, message: "File not found." };
+    }
+    if (!mockFileDatabase[fileIndex].downloadTimestamps) {
+      mockFileDatabase[fileIndex].downloadTimestamps = [];
+    }
+    mockFileDatabase[fileIndex].downloadTimestamps?.push(Date.now());
     revalidatePath('/');
     return { success: true };
   } catch (error) {
     console.error("Error recording download:", error);
-    return { success: false, message: "Failed to record download in Firestore." };
+    return { success: false, message: "Failed to record download." };
   }
 }
 
@@ -186,15 +145,10 @@ export async function getDownloadStats(): Promise<{ today: number; thisWeek: num
   const now = new Date();
   
   try {
-    const filesCollection = collection(db, "files");
-    const q = query(filesCollection); // Potentially add date range filters for performance
-    const querySnapshot = await getDocs(q);
-
-    querySnapshot.forEach((docSnap) => {
-      const data = docSnap.data();
-      if (data.downloadTimestamps && Array.isArray(data.downloadTimestamps)) {
-        data.downloadTimestamps.forEach((timestamp: Timestamp) => {
-          const downloadDate = timestamp.toDate(); // Convert Firestore Timestamp to JS Date
+    mockFileDatabase.forEach((file) => {
+      if (file.downloadTimestamps && Array.isArray(file.downloadTimestamps)) {
+        file.downloadTimestamps.forEach((timestamp: number) => {
+          const downloadDate = new Date(timestamp); // JS Date from timestamp
           if (isToday(downloadDate)) {
             todayCount++;
           }
@@ -206,10 +160,10 @@ export async function getDownloadStats(): Promise<{ today: number; thisWeek: num
     });
   } catch (error) {
     console.error("Error fetching download stats:", error);
-    // Return 0 counts on error or handle appropriately
   }
   
   return { today: todayCount, thisWeek: thisWeekCount };
 }
 
-export { getFileByIdFromFirestore };
+// Export getFileById for use in the API route
+export { getFileById };

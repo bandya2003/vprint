@@ -1,6 +1,6 @@
 
 import { NextResponse } from 'next/server';
-import { getFileByIdFromFirestore } from '@/lib/actions'; // Updated import path
+import { getFileById } from '@/lib/actions'; // Using the local actions file
 
 export async function GET(
   request: Request,
@@ -11,24 +11,16 @@ export async function GET(
     return NextResponse.json({ error: 'File ID is required' }, { status: 400 });
   }
 
-  const fileMetadata = await getFileByIdFromFirestore(fileId);
+  const fileMetadata = await getFileById(fileId);
 
-  if (!fileMetadata || !fileMetadata.downloadUrl) {
-    return NextResponse.json({ error: 'File not found or download URL missing' }, { status: 404 });
+  if (!fileMetadata || !fileMetadata.fileContentBase64) {
+    return NextResponse.json({ error: 'File not found or content missing' }, { status: 404 });
   }
 
   try {
-    // Fetch the file from the Firebase Storage URL
-    const fileResponse = await fetch(fileMetadata.downloadUrl);
+    const fileBuffer = Buffer.from(fileMetadata.fileContentBase64, 'base64');
 
-    if (!fileResponse.ok) {
-      console.error('Error fetching file from storage:', fileResponse.status, await fileResponse.text());
-      return NextResponse.json({ error: 'Failed to fetch file from storage' }, { status: fileResponse.status });
-    }
-
-    const fileBuffer = await fileResponse.arrayBuffer();
-
-    return new NextResponse(Buffer.from(fileBuffer), {
+    return new NextResponse(fileBuffer, {
       status: 200,
       headers: {
         'Content-Type': fileMetadata.fileType,
