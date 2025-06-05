@@ -21,8 +21,8 @@ import {
 import { UploadCloud, Loader2 } from "lucide-react";
 import { ThemeToggleButton } from "@/components/theme-toggle-button";
 
-// Dynamically import FileList component
-const FileList = dynamic(() => import('@/components/paperplane/FileList').then(mod => mod.FileList), {
+// Dynamically import FileList component, adjusting for default export
+const FileList = dynamic(() => import('@/components/paperplane/FileList'), {
   ssr: false,
   loading: () => (
     <div className="flex justify-center items-center py-10 w-full max-w-2xl">
@@ -38,7 +38,7 @@ export default function HomePage() {
 
   const handleUploadSuccess = useCallback(() => {
     setIsUploadDialogOpen(false);
-  }, []); // setIsUploadDialogOpen is stable
+  }, [setIsUploadDialogOpen]); // Include setIsUploadDialogOpen in dependencies for completeness, though it's stable
 
   return (
     <div className="flex flex-col items-center justify-start min-h-screen p-4 md:p-8 space-y-10">
