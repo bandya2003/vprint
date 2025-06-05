@@ -6,7 +6,7 @@ import { Separator } from "@/components/ui/separator";
 
 export default function HomePage() {
   return (
-    <div className="flex flex-col items-center justify-start min-h-screen p-4 md:p-8 space-y-10 font-body">
+    <div className="flex flex-col items-center justify-start min-h-screen p-4 md:p-8 space-y-10">
       <header className="text-center space-y-3 pt-4 md:pt-2">
         <div className="flex justify-center items-center mb-2">
           <PaperPlaneLogo size={60} />
@@ -24,14 +24,16 @@ export default function HomePage() {
           <FileUploadForm />
         </section>
 
-        <section id="stats" className="w-full flex justify-center px-2">
-          <DownloadStats />
-        </section>
-
         <Separator className="my-6 md:my-8" />
 
         <section id="retrieve" className="w-full flex justify-center px-2">
           <FileList />
+        </section>
+        
+        <Separator className="my-6 md:my-8" />
+
+        <section id="stats" className="w-full flex justify-center px-2">
+          <DownloadStats />
         </section>
       </main>
 
