@@ -1,6 +1,6 @@
 
-// This is a synchronous component, can be used by Server or Client Components.
-// NO "use client" directive.
+'use client';
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TrendingUp } from 'lucide-react';
