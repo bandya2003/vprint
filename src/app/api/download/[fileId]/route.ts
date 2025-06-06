@@ -2,6 +2,8 @@
 import { NextResponse } from 'next/server';
 import { getFileById } from '@/lib/actions'; // Using actions to get file metadata from Supabase
 
+export const dynamic = 'force-dynamic'; // Ensures the route is always dynamically rendered
+
 export async function GET(
   request: Request,
   { params }: { params: { fileId: string } }
