@@ -38,7 +38,7 @@ export default function HomePageClientContent() {
     <>
       <section id="upload-trigger" className="w-full flex flex-col items-center justify-center px-2 space-y-4">
           <p className="text-center text-muted-foreground">
-              Need to share a document? Click below to upload. Only the first file will be processed if multiple are selected.
+              Need to share a document? Click below to upload.
           </p>
           <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
           <DialogTrigger asChild>
@@ -50,7 +50,7 @@ export default function HomePageClientContent() {
             <DialogHeader>
               <DialogTitle className="text-2xl font-headline">Upload Your File</DialogTitle>
               <DialogDescription>
-                Enter a guest code and choose a file. Only the first file will be processed if multiple are selected. Max 20MB.
+                Enter a guest code and choose a file. Max 20MB.
               </DialogDescription>
             </DialogHeader>
             <div className="pt-4">

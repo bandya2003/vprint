@@ -35,7 +35,7 @@ const formSchema = z.object({
     .regex(/^[a-zA-Z0-9_.-]*$/, "Guest code can only contain letters, numbers, underscore, dot, or hyphen."),
   file: z
     .custom<FileList>((val) => val instanceof FileList && val.length > 0, "File is required.")
-    .transform((fileList) => fileList.item(0)) // Take the first file
+    .transform((fileList) => fileList.item(0)) // Still takes the first file
     .refine((file): file is File => file instanceof File && file.size > 0, "File cannot be empty.")
     .refine((file) => file.size <= MAX_FILE_SIZE, `Max file size is 20MB.`)
     .refine(
@@ -81,7 +81,6 @@ export function FileUploadForm({ onSuccess }: FileUploadFormProps) {
       formRef.current?.reset();
       resetReactHookForm();
       // Clear the file input visually by resetting its value through react-hook-form
-      // This assumes your file input is registered with the name "file"
       setValue('file', new DataTransfer().files, { shouldValidate: false, shouldDirty: false });
 
 
@@ -103,14 +102,6 @@ export function FileUploadForm({ onSuccess }: FileUploadFormProps) {
   const onValidSubmit = (data: FormDataSchema) => {
     if (formRef.current) {
       const formData = new FormData(formRef.current);
-      // Ensure only the first file is appended if multiple were selected by the user
-      // This aligns with the schema taking only the first file.
-      // Note: 'data.file' here is the single File object processed by Zod.
-      // If the input element itself still holds multiple files,
-      // we need to ensure FormData reflects that only one is intended.
-      // However, HTML FormData with a file input named "file" that has selected multiple files
-      // and then `new FormData(formRef.current)` will include all those files under the same name.
-      // The server action `handleFileUpload` also expects a single file.
       // The schema already transforms to take the first file.
       // We need to make sure the FormData passed to the action contains only that one file.
 
@@ -145,13 +136,13 @@ export function FileUploadForm({ onSuccess }: FileUploadFormProps) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="file-upload-input">File</Label> {/* Changed id for clarity */}
+            <Label htmlFor="file-upload-input">File</Label>
             <Input
-              id="file-upload-input" // Match label's htmlFor
+              id="file-upload-input"
               type="file"
               accept={ALLOWED_EXTENSIONS_DISPLAY}
-              multiple // Allow multiple file selection in browser dialog
-              {...register("file")} // react-hook-form will handle the FileList
+              // multiple // Removed to prevent multiple file selection in browser dialog
+              {...register("file")}
               className={`pt-2 ${errors.file ? "border-destructive" : ""}`}
             />
             <p className="text-xs text-muted-foreground">Max 20MB. Accepted: {ALLOWED_EXTENSIONS_DISPLAY}</p>
